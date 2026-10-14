@@ -7,7 +7,11 @@ authors = [
     { name = "JakeWalker", email = "lalala02070@gmail.com" }
 ]
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "fastapi>=0.143.0",
+    "httpx>=0.28.1",
+    "uvicorn>=0.54.0",
+]
 
 [project.scripts]
 uv-demo = "uv_demo:main"
