@@ -51,6 +51,8 @@ strict = true
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
+files = ["src", "tests"]
+
 
 [tool.pytest.ini_options]
 minversion = "8.0"
