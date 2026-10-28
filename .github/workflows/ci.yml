@@ -43,3 +43,17 @@ jobs:
 
       - name: pip-audit - security scan
         run: uv run pip-audit
+
+  security-scan:
+    name: Semgrep SAST Security Scan
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep SAST Scan
+        run: |
+          semgrep scan --config "p/default" --config "p/security-audit" --config .semgrep.yml --error
+

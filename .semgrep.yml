@@ -1,0 +1,19 @@
+# Cấu hình quy tắc quét bảo mật Semgrep cho dự án Python
+rules:
+  - id: python-fastapi-debug-true
+    patterns:
+      - pattern: uvicorn.run(..., reload=True, ...)
+    message: "Phát hiện reload=True trong môi trường production! Chỉ nên dùng reload khi debug local."
+    languages: [python]
+    severity: WARNING
+
+  - id: avoid-hardcoded-secret
+    patterns:
+      - pattern: |
+          $VAR = "..."
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: (?i)(password|secret_key|api_key|token|auth_token)
+    message: "Cảnh báo bảo mật: Không nên hardcode mật khẩu, API key hoặc token trực tiếp vào mã nguồn."
+    languages: [python]
+    severity: ERROR
