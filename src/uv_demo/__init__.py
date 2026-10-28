@@ -33,4 +33,5 @@ def calculate_add(data: AddRequest) -> dict[str, float]:
 def main() -> None:
     import uvicorn
 
-    uvicorn.run("uv_demo:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("uv_demo:app", host="127.0.0.1", port=8000, reload=False)
+

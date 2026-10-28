@@ -1,0 +1,4 @@
+# Bỏ qua quét các file test, cache và cấu hình CI nội bộ
+tests/
+.github/
+.venv/

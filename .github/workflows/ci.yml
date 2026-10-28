@@ -55,5 +55,6 @@ jobs:
 
       - name: Run Semgrep SAST Scan
         run: |
-          semgrep scan --config "p/default" --config "p/security-audit" --config .semgrep.yml --error
+          semgrep scan --config "p/default" --config "p/security-audit" --config .semgrep.yml --error src/
+
 
