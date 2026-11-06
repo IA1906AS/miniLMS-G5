@@ -43,14 +43,22 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# Cấu hình CORS an toàn
+# Cấu hình CORS an toàn theo chuẩn bảo mật OWASP (không dùng wildcard *)
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
 
 # Gắn các bộ định tuyến theo đúng 7 phần đặc tả chức năng LMS
 app.include_router(auth_router)

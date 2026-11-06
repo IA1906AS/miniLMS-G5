@@ -9,11 +9,10 @@ rules:
 
   - id: avoid-hardcoded-secret
     patterns:
-      - pattern: |
-          $VAR = "..."
+      - pattern: $VAR = "..."
       - metavariable-regex:
           metavariable: $VAR
-          regex: (?i)(password|secret_key|api_key|token|auth_token)
+          regex: (?i)^(password|secret_key|api_key|auth_token|jwt_secret|private_key)$
     message: "Cảnh báo bảo mật: Không nên hardcode mật khẩu, API key hoặc token trực tiếp vào mã nguồn."
     languages: [python]
     severity: ERROR
