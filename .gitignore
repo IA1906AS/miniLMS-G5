@@ -8,3 +8,15 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Database and uploaded files
+*.db
+lms.db
+uploads/
+
+# Testing & coverage
+.coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+

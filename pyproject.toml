@@ -8,8 +8,13 @@ authors = [
 ]
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "bcrypt>=5.0.0",
+    "email-validator>=2.3.0",
     "fastapi>=0.143.0",
     "httpx>=0.28.1",
+    "pyjwt>=2.15.1",
+    "python-multipart>=0.0.33",
+    "sqlalchemy>=2.1.8",
     "uvicorn>=0.54.0",
 ]
 
@@ -43,7 +48,11 @@ select = [
     "C4",  # flake8-comprehensions
     "UP",  # pyupgrade (cú pháp Python hiện đại)
 ]
-ignore = []
+ignore = [
+    "B008",  # do not perform function calls in argument defaults (FastAPI Depends idiom)
+    "E501",  # line length handled by ruff format
+]
+
 
 [tool.ruff.format]
 quote-style = "double"
