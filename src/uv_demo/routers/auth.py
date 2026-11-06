@@ -70,7 +70,7 @@ def register(
 
 
 # Dummy bcrypt hash dùng để đồng nhất thời gian phản hồi (chống Timing Attack / User Enumeration)
-_DUMMY_BCRYPT_HASH = "$2b$12$e8Y/0W.7Ff/r1pE3P4J3OuM4v1L3wK6zZ6p9O8q2v7s5d3g1k9i2a"
+_DUMMY_BCRYPT_HASH: str = hash_password("timing_mitigation_dummy_password")
 
 
 @router.post("/login", response_model=TokenResponse)
