@@ -20,3 +20,6 @@ uploads/
 .mypy_cache/
 .ruff_cache/
 
+# Local Antigravity SSOT & Rules (Never expose publicly)
+.agents/
+SSOT.md

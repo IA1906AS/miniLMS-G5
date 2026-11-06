@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from uv_demo import app
@@ -20,7 +22,6 @@ def test_openapi_docs_available() -> None:
 
 
 def test_frontend_web_client_served() -> None:
-    # Trình duyệt web gửi header Accept text/html
     response = client.get("/", headers={"Accept": "text/html,application/xhtml+xml"})
     assert response.status_code == 200
     assert "<!DOCTYPE html>" in response.text
@@ -59,37 +60,37 @@ def test_isolated_register_page_served() -> None:
     assert "MiniLMS" in response.text
 
 
-def test_get_system_ssot_endpoint() -> None:
-    response = client.get("/api/system/ssot")
-    assert response.status_code == 200
-    data = response.json()
-    assert "system" in data
-    assert "roles" in data
-    assert "test_accounts" in data
-    assert "security_safeguards" in data
+def test_zero_information_disclosure_on_public_web_and_api() -> None:
+    # SSOT must strictly be a local Antigravity file, never exposed on web API
+    ssot_res = client.get("/api/system/ssot")
+    assert ssot_res.status_code == 404
 
-    # Verify 3 core roles exist
-    assert "SV" in data["roles"]
-    assert "GV" in data["roles"]
-    assert "QT" in data["roles"]
+    forbidden_leaks = [
+        "admin123",
+        "teacher123",
+        "student123",
+        "admin@lms.edu.vn",
+        "teacher@lms.edu.vn",
+        "student1@lms.edu.vn",
+        "modal-ssot",
+        "quickLogin",
+    ]
+    for route in ["/login", "/register", "/app", "/static/app.js"]:
+        res = client.get(route)
+        assert res.status_code == 200
+        for secret in forbidden_leaks:
+            assert secret not in res.text, (
+                f"Information disclosure detected in {route}: {secret}"
+            )
 
-    # Verify security safeguards exist
-    safeguards = data["security_safeguards"]
-    assert "information_disclosure" in safeguards
-    assert "privilege_escalation" in safeguards
-    assert "network_and_assets" in safeguards
 
-
-def test_ssot_elements_in_frontend_pages() -> None:
-    # login page
-    login_res = client.get("/login")
-    assert login_res.status_code == 200
-    assert "modal-ssot" in login_res.text
-    assert "toggleSSOTModal" in login_res.text
-    assert "SSOT (Single Source of Truth)" in login_res.text
-
-    # main index page
-    index_res = client.get("/", headers={"Accept": "text/html,application/xhtml+xml"})
-    assert index_res.status_code == 200
-    assert "modal-ssot" in index_res.text
-    assert "openSSOTModal" in index_res.text
+def test_no_god_files_exceed_350_lines() -> None:
+    project_root = Path(__file__).resolve().parent.parent
+    for folder in ("src", "tests"):
+        for file_path in (project_root / folder).rglob("*"):
+            if file_path.is_file() and "__pycache__" not in file_path.parts:
+                line_count = len(file_path.read_text(encoding="utf-8").splitlines())
+                assert line_count <= 350, (
+                    f"God file detected: {file_path.relative_to(project_root)} "
+                    f"has {line_count} lines (maximum allowed is 350)."
+                )

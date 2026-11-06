@@ -48,6 +48,21 @@ def _to_course_response(course: Course) -> CourseResponse:
     )
 
 
+def _get_course_or_404(db: Session, course_id: int) -> Course:
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Khóa học không tồn tại."
+        )
+    return course
+
+
+def _require_course_instructor(course: Course, user: User, detail: str) -> None:
+    # BẢO VỆ CHIA QUYỀN NGANG: Giảng viên chỉ được thao tác trên khóa học của chính mình.
+    if user.role == UserRole.GV and course.instructor_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
+
+
 @router.get("", response_model=list[CourseResponse])
 def list_and_search_courses(
     search: str | None = Query(None, description="Tìm kiếm theo tên khóa học hoặc mã"),
@@ -56,18 +71,15 @@ def list_and_search_courses(
     _: User = Depends(get_current_user),
 ) -> list[CourseResponse]:
     query = db.query(Course).filter(Course.is_active.is_(True))
-
     if search:
         search_filter = f"%{search.strip()}%"
         query = query.filter(
             (Course.title.ilike(search_filter)) | (Course.code.ilike(search_filter))
         )
-
     if instructor_name:
         query = query.join(Course.instructor).filter(
             User.full_name.ilike(f"%{instructor_name.strip()}%")
         )
-
     courses = query.order_by(Course.created_at.desc()).all()
     return [_to_course_response(c) for c in courses]
 
@@ -78,12 +90,7 @@ def get_course_detail(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ) -> CourseResponse:
-    course = db.query(Course).filter(Course.id == course_id).first()
-    if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Khóa học không tồn tại."
-        )
-    return _to_course_response(course)
+    return _to_course_response(_get_course_or_404(db, course_id))
 
 
 @router.post("", response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
@@ -129,19 +136,12 @@ def update_course(
     current_user: User = Depends(require_roles(UserRole.GV, UserRole.QT)),
     db: Session = Depends(get_db),
 ) -> CourseResponse:
-    course = db.query(Course).filter(Course.id == course_id).first()
-    if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Khóa học không tồn tại."
-        )
-
-    # BẢO VỆ CHIA QUYỀN NGANG: Giảng viên chỉ được sửa khóa học của chính mình.
-    if current_user.role == UserRole.GV and course.instructor_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bạn không có quyền chỉnh sửa khóa học do giảng viên khác phụ trách.",
-        )
-
+    course = _get_course_or_404(db, course_id)
+    _require_course_instructor(
+        course,
+        current_user,
+        "Bạn không có quyền chỉnh sửa khóa học do giảng viên khác phụ trách.",
+    )
     if req.title is not None:
         course.title = req.title.strip()
     if req.description is not None:
@@ -149,7 +149,6 @@ def update_course(
 
     db.commit()
     db.refresh(course)
-
     log_audit(
         db,
         action="UPDATE_COURSE",
@@ -191,10 +190,8 @@ def student_self_enroll(
     if existing:
         return MessageResponse(message="Bạn đã ghi danh vào khóa học này từ trước.")
 
-    enrollment = Enrollment(course_id=course.id, student_id=current_user.id)
-    db.add(enrollment)
+    db.add(Enrollment(course_id=course.id, student_id=current_user.id))
     db.commit()
-
     log_audit(
         db,
         action="ENROLL_STUDENT",
@@ -216,25 +213,18 @@ def instructor_add_student(
     db: Session = Depends(get_db),
 ) -> MessageResponse:
     """Giảng viên bổ sung sinh viên vào danh sách lớp."""
-    course = db.query(Course).filter(Course.id == course_id).first()
-    if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Khóa học không tồn tại."
-        )
-
-    if current_user.role == UserRole.GV and course.instructor_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bạn không có quyền quản lý danh sách lớp của khóa học này.",
-        )
-
+    course = _get_course_or_404(db, course_id)
+    _require_course_instructor(
+        course,
+        current_user,
+        "Bạn không có quyền quản lý danh sách lớp của khóa học này.",
+    )
     student = db.query(User).filter(User.email == req.student_email.lower()).first()
     if not student:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Không tìm thấy sinh viên có email {req.student_email}.",
         )
-
     if student.role != UserRole.SV:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -249,10 +239,8 @@ def instructor_add_student(
     if existing:
         return MessageResponse(message="Sinh viên này đã có trong danh sách lớp.")
 
-    enrollment = Enrollment(course_id=course.id, student_id=student.id)
-    db.add(enrollment)
+    db.add(Enrollment(course_id=course.id, student_id=student.id))
     db.commit()
-
     log_audit(
         db,
         action="INSTRUCTOR_ADD_STUDENT",
@@ -274,24 +262,17 @@ async def upload_course_material(
     current_user: User = Depends(require_roles(UserRole.GV, UserRole.QT)),
     db: Session = Depends(get_db),
 ) -> MaterialResponse:
-    course = db.query(Course).filter(Course.id == course_id).first()
-    if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Khóa học không tồn tại."
-        )
-
-    if current_user.role == UserRole.GV and course.instructor_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bạn chỉ có thể tải lên tài liệu cho khóa học do mình phụ trách.",
-        )
-
+    course = _get_course_or_404(db, course_id)
+    _require_course_instructor(
+        course,
+        current_user,
+        "Bạn chỉ có thể tải lên tài liệu cho khóa học do mình phụ trách.",
+    )
     original_name, relative_path = await storage_service.save_upload_file(
         file=file,
         subfolder="materials",
         allowed_extensions=settings.ALLOWED_MATERIAL_EXTENSIONS,
     )
-
     material = Material(
         course_id=course.id,
         title=title.strip(),
@@ -302,7 +283,6 @@ async def upload_course_material(
     db.add(material)
     db.commit()
     db.refresh(material)
-
     log_audit(
         db,
         action="UPLOAD_MATERIAL",
@@ -320,15 +300,8 @@ def list_course_materials(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[MaterialResponse]:
-    course = db.query(Course).filter(Course.id == course_id).first()
-    if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Khóa học không tồn tại."
-        )
-
-    # BẢO VỆ CHIA QUYỀN: Chỉ sinh viên đã ghi danh, giảng viên phụ trách hoặc QT mới được xem danh sách tài liệu
+    course = _get_course_or_404(db, course_id)
     check_course_access(course, current_user, db)
-
     materials = (
         db.query(Material)
         .filter(Material.course_id == course_id)
@@ -349,15 +322,7 @@ def download_course_material(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tài liệu không tồn tại."
         )
-
-    course = db.query(Course).filter(Course.id == material.course_id).first()
-    if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Khóa học không tồn tại."
-        )
-
-    # BẢO VỆ CHIA QUYỀN: Kiểm tra quyền tải file tài liệu
+    course = _get_course_or_404(db, material.course_id)
     check_course_access(course, current_user, db)
-
     abs_path = storage_service.get_absolute_path(material.file_path)
     return FileResponse(abs_path, filename=material.filename)

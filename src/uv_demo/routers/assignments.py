@@ -47,7 +47,31 @@ def _to_submission_response(sub: Submission) -> SubmissionResponse:
     )
 
 
-# ---------------- Assignments ----------------
+def _get_course_or_404(db: Session, course_id: int) -> Course:
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Khóa học không tồn tại."
+        )
+    return course
+
+
+def _get_assignment_or_404(db: Session, assignment_id: int) -> Assignment:
+    assignment = db.query(Assignment).filter(Assignment.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Bài tập không tồn tại."
+        )
+    return assignment
+
+
+def _get_submission_or_404(db: Session, submission_id: int) -> Submission:
+    sub = db.query(Submission).filter(Submission.id == submission_id).first()
+    if not sub:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Bài nộp không tồn tại."
+        )
+    return sub
 
 
 @router.post(
@@ -61,12 +85,7 @@ def create_assignment(
     current_user: User = Depends(require_roles(UserRole.GV, UserRole.QT)),
     db: Session = Depends(get_db),
 ) -> AssignmentResponse:
-    course = db.query(Course).filter(Course.id == course_id).first()
-    if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Khóa học không tồn tại."
-        )
-
+    course = _get_course_or_404(db, course_id)
     # BẢO VỆ CHIA QUYỀN: Giảng viên chỉ được tạo bài tập cho khóa học do mình phụ trách
     if current_user.role == UserRole.GV and course.instructor_id != current_user.id:
         raise HTTPException(
@@ -104,14 +123,8 @@ def list_assignments(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[AssignmentResponse]:
-    course = db.query(Course).filter(Course.id == course_id).first()
-    if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Khóa học không tồn tại."
-        )
-
+    course = _get_course_or_404(db, course_id)
     check_course_access(course, current_user, db)
-
     assignments = (
         db.query(Assignment)
         .filter(Assignment.course_id == course_id)
@@ -119,9 +132,6 @@ def list_assignments(
         .all()
     )
     return [AssignmentResponse.model_validate(a) for a in assignments]
-
-
-# ---------------- Submissions ----------------
 
 
 @router.post(
@@ -136,13 +146,7 @@ async def submit_assignment(
     db: Session = Depends(get_db),
 ) -> SubmissionResponse:
     """Sinh viên nộp bài làm trong thời hạn quy định."""
-    assignment = db.query(Assignment).filter(Assignment.id == assignment_id).first()
-    if not assignment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Bài tập không tồn tại."
-        )
-
-    # Kiểm tra sinh viên có ghi danh vào khóa học này không
+    assignment = _get_assignment_or_404(db, assignment_id)
     enrollment = (
         db.query(Enrollment)
         .filter(
@@ -157,7 +161,6 @@ async def submit_assignment(
             detail="Bạn chưa ghi danh vào khóa học chứa bài tập này.",
         )
 
-    # Kiểm tra thời hạn nộp bài
     now = datetime.now(UTC)
     assignment_deadline = (
         assignment.deadline
@@ -176,7 +179,6 @@ async def submit_assignment(
         allowed_extensions=settings.ALLOWED_SUBMISSION_EXTENSIONS,
     )
 
-    # Nếu đã nộp trước đó thì cập nhật bài nộp mới nhất
     existing_sub = (
         db.query(Submission)
         .filter(
@@ -185,7 +187,6 @@ async def submit_assignment(
         )
         .first()
     )
-
     if existing_sub:
         existing_sub.filename = original_filename
         existing_sub.file_path = relative_path
@@ -203,7 +204,6 @@ async def submit_assignment(
 
     db.commit()
     db.refresh(sub)
-
     log_audit(
         db,
         action="SUBMIT_ASSIGNMENT",
@@ -224,25 +224,11 @@ def get_assignment_submissions(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[SubmissionResponse]:
-    """Truy xuất bài nộp:
-
-    - Sinh viên CHỈ xem được bài nộp của bản thân (Chống leo thang đặc quyền ngang).
-    - Giảng viên phụ trách hoặc QT xem được toàn bộ bài nộp của lớp.
-    """
-    assignment = db.query(Assignment).filter(Assignment.id == assignment_id).first()
-    if not assignment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Bài tập không tồn tại."
-        )
-
-    course = db.query(Course).filter(Course.id == assignment.course_id).first()
-    if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Khóa học không tồn tại."
-        )
+    """Sinh viên CHỈ xem được bài nộp của bản thân (Chống IDOR)."""
+    assignment = _get_assignment_or_404(db, assignment_id)
+    course = _get_course_or_404(db, assignment.course_id)
 
     if current_user.role == UserRole.SV:
-        # Sinh viên CHỈ thấy bài của mình
         subs = (
             db.query(Submission)
             .filter(
@@ -253,14 +239,12 @@ def get_assignment_submissions(
         )
         return [_to_submission_response(s) for s in subs]
 
-    if current_user.role == UserRole.GV:
-        if course.instructor_id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Bạn không phải giảng viên phụ trách khóa học này.",
-            )
+    if current_user.role == UserRole.GV and course.instructor_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không phải giảng viên phụ trách khóa học này.",
+        )
 
-    # GV phụ trách hoặc QT xem được tất cả
     subs = (
         db.query(Submission)
         .filter(Submission.assignment_id == assignment_id)
@@ -276,12 +260,7 @@ def download_submission_file(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> FileResponse:
-    sub = db.query(Submission).filter(Submission.id == submission_id).first()
-    if not sub:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Bài nộp không tồn tại."
-        )
-
+    sub = _get_submission_or_404(db, submission_id)
     assignment = db.query(Assignment).filter(Assignment.id == sub.assignment_id).first()
     course = (
         db.query(Course).filter(Course.id == assignment.course_id).first()
@@ -289,8 +268,6 @@ def download_submission_file(
         else None
     )
 
-    # BẢO VỆ CHIA QUYỀN:
-    # Sinh viên chỉ tải được bài của mình. Giảng viên chỉ tải được bài của lớp mình phụ trách.
     if current_user.role == UserRole.SV and sub.student_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -318,18 +295,8 @@ def grade_submission(
     db: Session = Depends(get_db),
 ) -> SubmissionResponse:
     """Giảng viên ghi nhận điểm số và nhận xét cho từng bài nộp."""
-    sub = db.query(Submission).filter(Submission.id == submission_id).first()
-    if not sub:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Bài nộp không tồn tại."
-        )
-
-    assignment = db.query(Assignment).filter(Assignment.id == sub.assignment_id).first()
-    if not assignment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Bài tập không tồn tại."
-        )
-
+    sub = _get_submission_or_404(db, submission_id)
+    assignment = _get_assignment_or_404(db, sub.assignment_id)
     course = db.query(Course).filter(Course.id == assignment.course_id).first()
     if (
         current_user.role == UserRole.GV
@@ -340,7 +307,6 @@ def grade_submission(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bạn chỉ có thể chấm điểm bài nộp của khóa học do mình phụ trách.",
         )
-
     if req.score > assignment.max_score:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -353,7 +319,6 @@ def grade_submission(
     sub.graded_at = datetime.now(UTC)
     db.commit()
     db.refresh(sub)
-
     log_audit(
         db,
         action="GRADE_SUBMISSION",
