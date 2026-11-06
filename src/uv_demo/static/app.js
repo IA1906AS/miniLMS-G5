@@ -1615,6 +1615,10 @@ async function openProfileModal() {
   }
 }
 
+function openSSOTModal() {
+  openModal('modal-ssot');
+}
+
 function toggleUserDropdown(forceState) {
   const menu = document.getElementById('user-dropdown');
   if (typeof forceState === 'boolean') {

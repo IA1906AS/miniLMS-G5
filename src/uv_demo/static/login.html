@@ -43,10 +43,10 @@
     </a>
 
     <div class="flex items-center space-x-3">
-      <!-- Guide Note Trigger Button for Testers / Evaluators -->
-      <button type="button" onclick="toggleGuideNoteModal(true)" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-950 text-indigo-200 border border-indigo-700/60 text-xs font-semibold shadow-sm transition">
-        <i class="fa-solid fa-book-bookmark text-amber-400"></i>
-        <span>📖 Hướng Dẫn & Kiểm Thử</span>
+      <!-- SSOT (Single Source of Truth) Trigger Button for Testers / Evaluators -->
+      <button type="button" onclick="toggleSSOTModal(true)" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-950 text-indigo-200 border border-indigo-700/60 text-xs font-semibold shadow-sm transition">
+        <i class="fa-solid fa-database text-amber-400"></i>
+        <span>📖 SSOT (Single Source of Truth)</span>
       </button>
 
       <a href="/docs" target="_blank" class="hidden sm:inline-flex items-center text-xs font-semibold text-slate-500 hover:text-indigo-600 transition">
@@ -105,7 +105,7 @@
           <a href="/register" class="font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
             Đăng ký tài khoản Sinh viên (SV)
           </a>
-          <button type="button" onclick="toggleGuideNoteModal(true)" class="text-slate-500 hover:text-indigo-600 font-medium">
+          <button type="button" onclick="toggleSSOTModal(true)" class="text-slate-500 hover:text-indigo-600 font-medium">
             Tài khoản demo?
           </button>
         </div>
@@ -114,26 +114,26 @@
       <!-- Quick Tester Banner -->
       <div class="bg-indigo-50/70 border border-indigo-200/80 p-3 rounded-xl text-center text-xs text-indigo-900">
         <i class="fa-solid fa-shield-halved text-indigo-600 mr-1"></i>
-        Đang kiểm thử hệ thống? Xem <button type="button" onclick="toggleGuideNoteModal(true)" class="underline font-bold text-indigo-700 hover:text-indigo-900">Hướng dẫn phân quyền & Tài khoản mẫu</button>.
+        Đang kiểm thử hệ thống? Xem <button type="button" onclick="toggleSSOTModal(true)" class="underline font-bold text-indigo-700 hover:text-indigo-900">SSOT (Single Source of Truth) & Tài khoản mẫu</button>.
       </div>
 
     </div>
   </main>
 
-  <!-- ==================== GUIDE NOTE MODAL (DÀNH CHO GIÁM KHẢO / TESTER) ==================== -->
-  <div id="modal-guide-note" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <!-- ==================== SSOT MODAL (SINGLE SOURCE OF TRUTH) ==================== -->
+  <div id="modal-ssot" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-5 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <div class="flex items-center space-x-2.5">
           <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
-            <i class="fa-solid fa-book-open text-sm"></i>
+            <i class="fa-solid fa-database text-sm"></i>
           </div>
           <div>
-            <h2 class="text-base font-bold text-slate-900">Hướng Dẫn Sử Dụng & Kiểm Thử Phân Quyền</h2>
-            <p class="text-[11px] text-slate-500">Tài liệu hướng dẫn đánh giá hệ thống MiniLMS theo đặc tả</p>
+            <h2 class="text-base font-bold text-slate-900">SSOT - Single Source of Truth</h2>
+            <p class="text-[11px] text-slate-500">Nguồn chân lý duy nhất về phân quyền, đặc tả bảo mật và tài khoản kiểm thử</p>
           </div>
         </div>
-        <button type="button" onclick="toggleGuideNoteModal(false)" class="text-slate-400 hover:text-slate-600 text-lg">
+        <button type="button" onclick="toggleSSOTModal(false)" class="text-slate-400 hover:text-slate-600 text-lg">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -209,11 +209,22 @@
             </button>
           </div>
 
+          <!-- SV Account 2 (IDOR Testing) -->
+          <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+            <div>
+              <div class="font-bold text-slate-800">[SV] Phạm Thị Bích • <span class="font-mono text-slate-500">student2@lms.edu.vn</span></div>
+              <div class="text-[11px] text-slate-400">Mật khẩu: <span class="font-mono font-semibold text-slate-600">student123</span> (Dùng để kiểm thử chống leo thang ngang IDOR)</div>
+            </div>
+            <button type="button" onclick="autoFillAccount('student2@lms.edu.vn', 'student123')" class="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-semibold text-[11px] transition">
+              Điền vào form
+            </button>
+          </div>
+
           <!-- GV Account -->
           <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
             <div>
               <div class="font-bold text-slate-800">[GV] Thầy Nguyễn Hoàng Giang • <span class="font-mono text-slate-500">teacher@lms.edu.vn</span></div>
-              <div class="text-[11px] text-slate-400">Mật khẩu: <span class="font-mono font-semibold text-slate-600">teacher123</span></div>
+              <div class="text-[11px] text-slate-400">Mật khẩu: <span class="font-mono font-semibold text-slate-600">teacher123</span> (Quản lý khóa học, bài tập, chấm điểm, đề thi)</div>
             </div>
             <button type="button" onclick="autoFillAccount('teacher@lms.edu.vn', 'teacher123')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] transition">
               Điền vào form
@@ -224,7 +235,7 @@
           <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
             <div>
               <div class="font-bold text-slate-800">[QT] Quản Trị Viên (Admin) • <span class="font-mono text-slate-500">admin@lms.edu.vn</span></div>
-              <div class="text-[11px] text-slate-400">Mật khẩu: <span class="font-mono font-semibold text-slate-600">admin123</span></div>
+              <div class="text-[11px] text-slate-400">Mật khẩu: <span class="font-mono font-semibold text-slate-600">admin123</span> (Quản lý người dùng, đổi quyền SV/GV/QT, Audit Logs)</div>
             </div>
             <button type="button" onclick="autoFillAccount('admin@lms.edu.vn', 'admin123')" class="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold text-[11px] transition">
               Điền vào form
@@ -233,9 +244,39 @@
         </div>
       </div>
 
-      <div class="pt-3 border-t border-slate-100 flex justify-end">
-        <button type="button" onclick="toggleGuideNoteModal(false)" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold transition">
-          Đã hiểu, đóng hướng dẫn
+      <!-- Security Safeguards Matrix -->
+      <div class="space-y-2 pt-2 border-t border-slate-100 text-xs">
+        <h3 class="font-bold text-slate-800 uppercase tracking-wider flex items-center">
+          <i class="fa-solid fa-shield-halved text-indigo-600 mr-1.5"></i> Cơ Chế Bảo Vệ Hệ Thống (SSOT Security Controls)
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-[11px]">
+          <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50">
+            <span class="font-bold text-slate-800 block mb-1 text-xs"><i class="fa-solid fa-lock text-emerald-600 mr-1"></i> Chống Rò Rỉ & Leo Thang Đặc Quyền</span>
+            <ul class="list-disc list-inside text-slate-600 space-y-0.5">
+              <li>Đăng ký luôn cố định <span class="font-mono text-indigo-600">role=SV</span> (chặn Vertical Escalation).</li>
+              <li>Chặn IDOR bài nộp bằng kiểm tra sở hữu học sinh.</li>
+              <li>Giảng viên chỉ có quyền sửa khóa học do mình tạo.</li>
+              <li>Ẩn hoàn toàn đáp án trắc nghiệm khi gửi đề thi về SV.</li>
+            </ul>
+          </div>
+          <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50">
+            <span class="font-bold text-slate-800 block mb-1 text-xs"><i class="fa-solid fa-network-wired text-indigo-600 mr-1"></i> An Toàn Mạng & Máy Chủ</span>
+            <ul class="list-disc list-inside text-slate-600 space-y-0.5">
+              <li>Rate Limit: Tối đa 15 lần đăng nhập/phút/IP.</li>
+              <li>Chống Timing Attack bằng bcrypt hash giả lập.</li>
+              <li>Bảo vệ Header: X-Frame-Options, nosniff, ẩn server.</li>
+              <li>Đổi tên file tải lên bằng UUID ngẫu nhiên.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+        <a href="/api/system/ssot" target="_blank" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center">
+          <i class="fa-solid fa-code mr-1"></i> Xem JSON SSOT API <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-[10px]"></i>
+        </a>
+        <button type="button" onclick="toggleSSOTModal(false)" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold transition">
+          Đóng SSOT
         </button>
       </div>
     </div>
@@ -267,8 +308,8 @@
       }
     })();
 
-    function toggleGuideNoteModal(show) {
-      const modal = document.getElementById('modal-guide-note');
+    function toggleSSOTModal(show) {
+      const modal = document.getElementById('modal-ssot');
       if (show) modal.classList.remove('hidden');
       else modal.classList.add('hidden');
     }
@@ -276,7 +317,7 @@
     function autoFillAccount(email, password) {
       document.getElementById('input-email').value = email;
       document.getElementById('input-password').value = password;
-      toggleGuideNoteModal(false);
+      toggleSSOTModal(false);
       hideError();
     }
 

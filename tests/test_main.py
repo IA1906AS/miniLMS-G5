@@ -57,3 +57,39 @@ def test_isolated_register_page_served() -> None:
     assert response.status_code == 200
     assert "Đăng Ký Tài Khoản Sinh Viên" in response.text
     assert "MiniLMS" in response.text
+
+
+def test_get_system_ssot_endpoint() -> None:
+    response = client.get("/api/system/ssot")
+    assert response.status_code == 200
+    data = response.json()
+    assert "system" in data
+    assert "roles" in data
+    assert "test_accounts" in data
+    assert "security_safeguards" in data
+
+    # Verify 3 core roles exist
+    assert "SV" in data["roles"]
+    assert "GV" in data["roles"]
+    assert "QT" in data["roles"]
+
+    # Verify security safeguards exist
+    safeguards = data["security_safeguards"]
+    assert "information_disclosure" in safeguards
+    assert "privilege_escalation" in safeguards
+    assert "network_and_assets" in safeguards
+
+
+def test_ssot_elements_in_frontend_pages() -> None:
+    # login page
+    login_res = client.get("/login")
+    assert login_res.status_code == 200
+    assert "modal-ssot" in login_res.text
+    assert "toggleSSOTModal" in login_res.text
+    assert "SSOT (Single Source of Truth)" in login_res.text
+
+    # main index page
+    index_res = client.get("/", headers={"Accept": "text/html,application/xhtml+xml"})
+    assert index_res.status_code == 200
+    assert "modal-ssot" in index_res.text
+    assert "openSSOTModal" in index_res.text

@@ -1,6 +1,7 @@
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,6 +21,7 @@ from uv_demo.routers import (
     users_router,
 )
 from uv_demo.seed import run_seed_if_needed
+from uv_demo.ssot import SSOT_SPEC
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
@@ -162,6 +164,12 @@ def health_check() -> HealthResponse:
         message="Hệ thống LMS đang hoạt động bình thường",
         system="FastAPI + uv + SQLite/SQLAlchemy",
     )
+
+
+@app.get("/api/system/ssot", tags=["SSOT - Nguồn Chân Lý Duy Nhất"])
+def get_system_ssot() -> dict[str, Any]:
+    """Trả về toàn bộ đặc tả chuẩn mực (Single Source of Truth) của hệ thống LMS."""
+    return SSOT_SPEC
 
 
 def main() -> None:
