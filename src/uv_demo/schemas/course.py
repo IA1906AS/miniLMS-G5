@@ -22,6 +22,7 @@ class CourseResponse(BaseModel):
     instructor_id: int
     instructor_name: str | None = None
     is_active: bool
+    is_enrolled: bool = False
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

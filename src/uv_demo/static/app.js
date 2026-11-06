@@ -22,44 +22,31 @@ const state = {
 // ================= API HELPER =================
 async function api(endpoint, options = {}) {
   const headers = options.headers || {};
-  if (state.token) {
-    headers['Authorization'] = `Bearer ${state.token}`;
-  }
-
+  if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
   if (!(options.body instanceof FormData) && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
-
-  const response = await fetch(endpoint, {
-    ...options,
-    headers,
-  });
+  const response = await fetch(endpoint, { ...options, headers });
 
   if (response.status === 401) {
     localStorage.removeItem('lms_token');
     localStorage.removeItem('lms_user');
-    window.location.href = '/login';
+    window.location.replace('/login');
     throw new Error('Unauthorized');
   }
-
   if (response.status === 403) {
     const err = await response.json().catch(() => ({ detail: 'Không có quyền thực hiện hành động này.' }));
     showToast(err.detail || 'Từ chối truy cập do vi phạm phân quyền.', 'error');
     throw new Error(err.detail);
   }
-
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Đã xảy ra lỗi trên máy chủ.' }));
     const msg = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
     showToast(msg || 'Lỗi xử lý yêu cầu.', 'error');
     throw new Error(msg);
   }
-
   const contentType = response.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
-    return await response.json();
-  }
-  return response;
+  return contentType.includes('application/json') ? await response.json() : response;
 }
 
 // ================= TOAST NOTIFICATIONS (DEDUPLICATED) =================
@@ -68,9 +55,7 @@ let lastToastTime = 0;
 
 function showToast(message, type = 'info') {
   const now = Date.now();
-  if (message === lastToastMsg && now - lastToastTime < 3000) {
-    return;
-  }
+  if (message === lastToastMsg && now - lastToastTime < 3000) return;
   lastToastMsg = message;
   lastToastTime = now;
 
@@ -92,16 +77,10 @@ function showToast(message, type = 'info') {
   };
 
   toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg flex items-center space-x-3 text-xs font-medium transform transition duration-300 translate-y-2 opacity-0 ${colors[type] || colors.info}`;
-  toast.innerHTML = `
-    <i class="fa-solid ${icons[type] || icons.info} text-sm"></i>
-    <span>${escapeHtml(message)}</span>
-  `;
+  toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info} text-sm"></i><span>${escapeHtml(message)}</span>`;
 
   container.appendChild(toast);
-  requestAnimationFrame(() => {
-    toast.classList.remove('translate-y-2', 'opacity-0');
-  });
-
+  requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
   setTimeout(() => {
     toast.classList.add('opacity-0', 'translate-x-full');
     setTimeout(() => toast.remove(), 300);
@@ -111,27 +90,20 @@ function showToast(message, type = 'info') {
 // ================= SESSION & RBAC HELPERS =================
 function setSession(authData) {
   state.token = authData.access_token;
-  state.currentUser = {
-    id: authData.user_id,
-    full_name: authData.full_name,
-    role: authData.role,
-  };
+  state.currentUser = { id: authData.user_id, full_name: authData.full_name, role: authData.role };
   localStorage.setItem('lms_token', state.token);
   localStorage.setItem('lms_user', JSON.stringify(state.currentUser));
 }
 
 function logout() {
   if (state.token) {
-    fetch('/api/auth/logout', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${state.token}` },
-    }).catch(() => {});
+    fetch('/api/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${state.token}` } }).catch(() => {});
   }
   state.token = null;
   state.currentUser = null;
   localStorage.removeItem('lms_token');
   localStorage.removeItem('lms_user');
-  window.location.href = '/login';
+  window.location.replace('/login');
 }
 
 function getRoleLabel(role) {
@@ -208,14 +180,12 @@ function updateNavState() {
   }
 }
 
-// ================= NAVIGATION =================
-function navigateTo(viewName) {
+// ================= NAVIGATION & BROWSER HISTORY =================
+function navigateTo(viewName, pushHistory = true) {
   state.currentView = viewName;
-  document.getElementById('view-courses').classList.add('hidden');
-  document.getElementById('view-course-detail').classList.add('hidden');
-  document.getElementById('view-my-grades').classList.add('hidden');
-  document.getElementById('view-admin').classList.add('hidden');
-
+  ['view-courses', 'view-course-detail', 'view-my-grades', 'view-admin'].forEach(id => {
+    document.getElementById(id)?.classList.add('hidden');
+  });
   document.querySelectorAll('.nav-tab').forEach(t => {
     t.classList.remove('text-indigo-600', 'bg-indigo-50', 'font-bold');
   });
@@ -229,7 +199,7 @@ function navigateTo(viewName) {
   } else if (viewName === 'my-grades') {
     if (!state.currentUser || state.currentUser.role !== 'SV') {
       showToast('Sổ điểm cá nhân chỉ áp dụng cho Sinh viên (SV)', 'warning');
-      navigateTo('courses');
+      navigateTo('courses', false);
       return;
     }
     document.getElementById('view-my-grades').classList.remove('hidden');
@@ -238,14 +208,34 @@ function navigateTo(viewName) {
   } else if (viewName === 'admin') {
     if (!state.currentUser || state.currentUser.role !== 'QT') {
       showToast('Khu vực này yêu cầu quyền Quản trị viên (QT).', 'error');
-      navigateTo('courses');
+      navigateTo('courses', false);
       return;
     }
     document.getElementById('view-admin').classList.remove('hidden');
     document.getElementById('tab-admin')?.classList.add('text-purple-700', 'bg-purple-50', 'font-bold');
     loadAdminUsers();
   }
+
+  if (pushHistory) {
+    const courseId = viewName === 'course-detail' ? (state.currentCourse?.id || null) : null;
+    const cur = window.history.state;
+    if (!cur || cur.view !== viewName || cur.courseId !== courseId) {
+      window.history.pushState({ view: viewName, courseId }, '');
+    }
+  }
 }
+
+window.addEventListener('popstate', (e) => {
+  closeAllModals();
+  const st = e.state;
+  if (!st || !st.view || st.view === 'courses') {
+    navigateTo('courses', false);
+  } else if (st.view === 'course-detail' && st.courseId) {
+    openCourseDetail(st.courseId, false);
+  } else {
+    navigateTo(st.view, false);
+  }
+});
 
 // ================= MODAL CONTROLS =================
 function openModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
@@ -310,9 +300,10 @@ document.addEventListener('click', (e) => {
 
 async function initApp() {
   if (!state.token) {
-    window.location.href = '/login';
+    window.location.replace('/login');
     return;
   }
+  window.history.replaceState({ view: 'courses', courseId: null }, '');
   updateNavState();
   try {
     const me = await api('/api/users/me');
@@ -323,7 +314,7 @@ async function initApp() {
   } catch {
     localStorage.removeItem('lms_token');
     localStorage.removeItem('lms_user');
-    window.location.href = '/login';
+    window.location.replace('/login');
   }
 }
 

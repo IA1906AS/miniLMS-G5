@@ -26,15 +26,24 @@ async function loadCourses(search = '') {
       return;
     }
 
-    grid.innerHTML = courses.map(c => `
+    const isSV = state.currentUser && state.currentUser.role === 'SV';
+    grid.innerHTML = courses.map(c => {
+      const needEnroll = isSV && !c.is_enrolled;
+      const actionBtn = needEnroll
+        ? `<button onclick="quickEnrollCourse('${escapeHtml(c.code)}', ${c.id})" class="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold transition flex items-center shadow-sm"><i class="fa-solid fa-user-plus mr-1.5 text-[10px]"></i> Ghi danh & Vào học</button>`
+        : `<button onclick="openCourseDetail(${c.id})" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-600 text-white text-xs font-semibold transition flex items-center shadow-sm">Vào học <i class="fa-solid fa-arrow-right ml-1.5 text-[10px]"></i></button>`;
+      const statusBadge = needEnroll
+        ? `<span class="text-[11px] text-amber-600 font-medium flex items-center"><i class="fa-solid fa-circle text-[6px] mr-1"></i> Chưa ghi danh</span>`
+        : `<span class="text-[11px] text-emerald-600 font-medium flex items-center"><i class="fa-solid fa-circle text-[6px] mr-1"></i> Đã tham gia</span>`;
+      return `
       <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between group">
         <div class="space-y-3">
           <div class="flex items-center justify-between">
             <span class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">${escapeHtml(c.code)}</span>
-            <span class="text-[11px] text-emerald-600 font-medium flex items-center"><i class="fa-solid fa-circle text-[6px] mr-1"></i> Đang mở</span>
+            ${statusBadge}
           </div>
           <div>
-            <h3 class="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition leading-snug cursor-pointer" onclick="openCourseDetail(${c.id})">${escapeHtml(c.title)}</h3>
+            <h3 class="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition leading-snug cursor-pointer" onclick="${needEnroll ? `quickEnrollCourse('${escapeHtml(c.code)}', ${c.id})` : `openCourseDetail(${c.id})`}">${escapeHtml(c.title)}</h3>
             <p class="text-xs text-slate-500 line-clamp-2 mt-1.5 leading-relaxed">${escapeHtml(c.description || 'Chưa có mô tả cho khóa học này.')}</p>
           </div>
         </div>
@@ -45,14 +54,25 @@ async function loadCourses(search = '') {
             </div>
             <span class="font-medium truncate max-w-[140px]">${escapeHtml(c.instructor_name || 'GV')}</span>
           </div>
-          <button onclick="openCourseDetail(${c.id})" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-600 text-white text-xs font-semibold transition flex items-center shadow-sm">
-            Vào học <i class="fa-solid fa-arrow-right ml-1.5 text-[10px]"></i>
-          </button>
+          ${actionBtn}
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   } catch (e) {
     grid.innerHTML = `<div class="col-span-full py-8 text-center text-red-500 text-xs">Không thể tải khóa học: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function quickEnrollCourse(courseCode, courseId) {
+  try {
+    const res = await api('/api/courses/enroll', {
+      method: 'POST',
+      body: JSON.stringify({ course_code: courseCode }),
+    });
+    showToast(res.message || `Đã ghi danh khóa học ${courseCode}!`, 'success');
+    await openCourseDetail(courseId);
+  } catch (e) {
+    console.error('Enroll error:', e);
   }
 }
 
@@ -64,9 +84,13 @@ function debounceSearchCourses() {
   }, 350);
 }
 
-async function openCourseDetail(courseId) {
+async function openCourseDetail(courseId, pushHistory = true) {
   try {
     const course = await api(`/api/courses/${courseId}`);
+    if (state.currentUser && state.currentUser.role === 'SV' && !course.is_enrolled) {
+      await quickEnrollCourse(course.code, courseId);
+      return;
+    }
     state.currentCourse = course;
 
     document.getElementById('detail-course-code').textContent = course.code;
@@ -91,7 +115,7 @@ async function openCourseDetail(courseId) {
       if (el) el.classList.toggle('hidden', !isInstructorOrAdmin);
     });
 
-    navigateTo('course-detail');
+    navigateTo('course-detail', pushHistory);
     switchCourseSubTab('forum');
   } catch (e) {
     console.error('Cannot open course detail:', e);

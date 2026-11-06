@@ -105,7 +105,15 @@
   </footer>
 
   <script>
-    (async function checkExistingAuth() {
+    function resetLoginButton() {
+      const btn = document.getElementById('btn-submit');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span>Đăng nhập</span><i class="fa-solid fa-right-to-bracket text-xs"></i>`;
+      }
+    }
+
+    async function checkExistingAuth() {
       const token = localStorage.getItem('lms_token');
       if (token) {
         try {
@@ -113,7 +121,7 @@
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (res.ok) {
-            window.location.href = '/';
+            window.location.replace('/');
           } else {
             localStorage.removeItem('lms_token');
             localStorage.removeItem('lms_user');
@@ -122,7 +130,13 @@
           // Giữ nguyên khi lỗi mạng
         }
       }
-    })();
+    }
+
+    window.addEventListener('pageshow', () => {
+      resetLoginButton();
+      checkExistingAuth();
+    });
+    checkExistingAuth();
 
     function showError(msg) {
       const alert = document.getElementById('error-alert');
@@ -138,7 +152,6 @@
     async function performLogin(email, password) {
       hideError();
       const btn = document.getElementById('btn-submit');
-      const originalText = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang xác thực...`;
 
@@ -157,8 +170,7 @@
         const data = await response.json();
         if (!response.ok) {
           showError(data.detail || 'Email hoặc mật khẩu không chính xác.');
-          btn.disabled = false;
-          btn.innerHTML = originalText;
+          resetLoginButton();
           return;
         }
 
@@ -171,12 +183,12 @@
 
         btn.innerHTML = `<i class="fa-solid fa-check mr-2"></i> Thành công! Đang chuyển hướng...`;
         setTimeout(() => {
-          window.location.href = '/';
-        }, 250);
+          resetLoginButton();
+          window.location.replace('/');
+        }, 150);
       } catch (err) {
         clearTimeout(timeoutId);
-        btn.disabled = false;
-        btn.innerHTML = originalText;
+        resetLoginButton();
         if (err.name === 'AbortError') {
           showError('Yêu cầu hết thời gian chờ (Timeout). Vui lòng thử lại.');
         } else {

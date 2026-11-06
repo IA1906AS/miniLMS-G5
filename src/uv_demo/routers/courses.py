@@ -35,7 +35,25 @@ from uv_demo.services.storage import storage_service
 router = APIRouter(prefix="/api/courses", tags=["3. Quản lý khoá học"])
 
 
-def _to_course_response(course: Course) -> CourseResponse:
+def _to_course_response(
+    course: Course, user: User | None = None, db: Session | None = None
+) -> CourseResponse:
+    enrolled = True
+    if user and db:
+        if user.role == UserRole.QT or (
+            user.role == UserRole.GV and course.instructor_id == user.id
+        ):
+            enrolled = True
+        else:
+            enrolled = (
+                db.query(Enrollment)
+                .filter(
+                    Enrollment.course_id == course.id,
+                    Enrollment.student_id == user.id,
+                )
+                .first()
+                is not None
+            )
     return CourseResponse(
         id=course.id,
         code=course.code,
@@ -44,6 +62,7 @@ def _to_course_response(course: Course) -> CourseResponse:
         instructor_id=course.instructor_id,
         instructor_name=course.instructor.full_name if course.instructor else None,
         is_active=course.is_active,
+        is_enrolled=enrolled,
         created_at=course.created_at,
     )
 
@@ -58,7 +77,6 @@ def _get_course_or_404(db: Session, course_id: int) -> Course:
 
 
 def _require_course_instructor(course: Course, user: User, detail: str) -> None:
-    # BẢO VỆ CHIA QUYỀN NGANG: Giảng viên chỉ được thao tác trên khóa học của chính mình.
     if user.role == UserRole.GV and course.instructor_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
@@ -68,7 +86,7 @@ def list_and_search_courses(
     search: str | None = Query(None, description="Tìm kiếm theo tên khóa học hoặc mã"),
     instructor_name: str | None = Query(None, description="Lọc theo tên giảng viên"),
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> list[CourseResponse]:
     query = db.query(Course).filter(Course.is_active.is_(True))
     if search:
@@ -81,16 +99,16 @@ def list_and_search_courses(
             User.full_name.ilike(f"%{instructor_name.strip()}%")
         )
     courses = query.order_by(Course.created_at.desc()).all()
-    return [_to_course_response(c) for c in courses]
+    return [_to_course_response(c, current_user, db) for c in courses]
 
 
 @router.get("/{course_id}", response_model=CourseResponse)
 def get_course_detail(
     course_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> CourseResponse:
-    return _to_course_response(_get_course_or_404(db, course_id))
+    return _to_course_response(_get_course_or_404(db, course_id), current_user, db)
 
 
 @router.post("", response_model=CourseResponse, status_code=status.HTTP_201_CREATED)

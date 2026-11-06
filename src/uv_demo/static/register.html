@@ -141,6 +141,19 @@
   </footer>
 
   <script>
+    function resetRegisterButton() {
+      const btn = document.getElementById('btn-submit');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span>Đăng ký tài khoản</span><i class="fa-solid fa-user-plus text-xs"></i>`;
+      }
+      document.getElementById('success-alert')?.classList.add('hidden');
+    }
+
+    window.addEventListener('pageshow', () => {
+      resetRegisterButton();
+    });
+
     function showError(msg) {
       document.getElementById('success-alert').classList.add('hidden');
       const alert = document.getElementById('error-alert');
@@ -171,7 +184,6 @@
       }
 
       const btn = document.getElementById('btn-submit');
-      const originalText = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang xử lý...`;
 
@@ -185,19 +197,18 @@
         const data = await response.json();
         if (!response.ok) {
           showError(data.detail || 'Đăng ký không thành công.');
-          btn.disabled = false;
-          btn.innerHTML = originalText;
+          resetRegisterButton();
           return;
         }
 
         showSuccess('Đăng ký tài khoản thành công! Đang chuyển hướng đến trang đăng nhập...');
         setTimeout(() => {
-          window.location.href = '/login';
-        }, 1500);
+          resetRegisterButton();
+          window.location.replace('/login');
+        }, 1000);
       } catch (err) {
         showError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
-        btn.disabled = false;
-        btn.innerHTML = originalText;
+        resetRegisterButton();
       }
     }
   </script>
