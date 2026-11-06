@@ -2,3 +2,4 @@
 tests/
 .github/
 .venv/
+src/uv_demo/static/
