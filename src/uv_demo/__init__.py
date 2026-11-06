@@ -1,12 +1,13 @@
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from uv_demo.database import Base, engine
 from uv_demo.routers import (
@@ -67,6 +68,45 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def security_hardening_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Tăng cường bảo vệ ứng dụng Web & Triệt tiêu Information Disclosure."""
+    response = await call_next(request)
+    # 1. Chống Clickjacking
+    response.headers["X-Frame-Options"] = "DENY"
+    # 2. Chống MIME-type confusion / sniffing
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    # 3. Kích hoạt bộ lọc XSS của trình duyệt
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    # 4. Kiểm soát referrer an toàn
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    # 5. Khóa quyền thiết bị nhạy cảm
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    # 6. Chống Server Fingerprinting (xóa header Server nếu có)
+    if "server" in response.headers:
+        del response.headers["server"]
+    return response
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> Response:
+    """Ngăn chặn rò rỉ mã nguồn, cấu trúc DB hoặc tracebacks (CWE-200)."""
+    if isinstance(exc, StarletteHTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+            headers=getattr(exc, "headers", None) or {},
+        )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "detail": "Đã xảy ra sự cố kỹ thuật trên máy chủ. Thông tin hệ thống đã được bảo vệ."
+        },
+    )
 
 
 # Gắn các bộ định tuyến theo đúng 7 phần đặc tả chức năng LMS

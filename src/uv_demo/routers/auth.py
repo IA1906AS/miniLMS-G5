@@ -20,6 +20,7 @@ from uv_demo.schemas.auth import (
 from uv_demo.security.audit import log_audit
 from uv_demo.security.dependencies import get_current_user, oauth2_scheme
 from uv_demo.security.password import hash_password, verify_password
+from uv_demo.security.ratelimit import login_rate_limiter
 from uv_demo.security.token import create_access_token, revoke_token
 from uv_demo.services.email import email_service
 
@@ -68,12 +69,39 @@ def register(
     )
 
 
+# Dummy bcrypt hash dùng để đồng nhất thời gian phản hồi (chống Timing Attack / User Enumeration)
+_DUMMY_BCRYPT_HASH = "$2b$12$e8Y/0W.7Ff/r1pE3P4J3OuM4v1L3wK6zZ6p9O8q2v7s5d3g1k9i2a"
+
+
 @router.post("/login", response_model=TokenResponse)
 def login(
     req: LoginRequest, request: Request, db: Session = Depends(get_db)
 ) -> TokenResponse:
+    # 1. Chống Brute-force & DDoS bằng Rate Limiter
+    login_rate_limiter.check(request)
+
+    client_ip = request.client.host if request.client else None
     user = db.query(User).filter(User.email == req.email.lower()).first()
-    if not user or not verify_password(req.password, user.hashed_password):
+
+    # 2. Chống Timing Attack (CWE-208) & Lộ thông tin tài khoản (Information Disclosure):
+    # Dù tài khoản có tồn tại hay không, vẫn thực hiện hash verify để thời gian tính toán là như nhau
+    if user:
+        is_password_valid = verify_password(req.password, user.hashed_password)
+    else:
+        verify_password(req.password, _DUMMY_BCRYPT_HASH)
+        is_password_valid = False
+
+    if not user or not is_password_valid:
+        # Ghi nhận nhật ký đăng nhập thất bại phục vụ phát hiện xâm nhập
+        log_audit(
+            db,
+            action="LOGIN_FAILED",
+            entity_type="USER",
+            user_id=user.id if user else None,
+            entity_id=user.id if user else None,
+            details=f"Đăng nhập thất bại đối với email: {req.email}",
+            ip_address=client_ip,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email hoặc mật khẩu không chính xác.",
@@ -90,7 +118,6 @@ def login(
         data={"sub": str(user.id), "email": user.email, "role": user.role.value}
     )
 
-    client_ip = request.client.host if request.client else None
     log_audit(
         db,
         action="LOGIN",

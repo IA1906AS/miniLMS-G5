@@ -153,3 +153,21 @@ def test_password_change_flow(client: TestClient, db_session: Session) -> None:
         },
     )
     assert res_ok.status_code == 200
+
+
+def test_security_headers_present(client: TestClient) -> None:
+    res = client.get("/api/health")
+    assert res.status_code == 200
+    assert res.headers.get("x-frame-options") == "DENY"
+    assert res.headers.get("x-content-type-options") == "nosniff"
+    assert res.headers.get("referrer-policy") == "strict-origin-when-cross-origin"
+    assert "server" not in res.headers
+
+
+def test_login_nonexistent_user_generic_error(client: TestClient) -> None:
+    res = client.post(
+        "/api/auth/login",
+        json={"email": "nonexistent@example.com", "password": "wrongPassword123"},
+    )
+    assert res.status_code == 401
+    assert res.json()["detail"] == "Email hoặc mật khẩu không chính xác."

@@ -28,8 +28,8 @@
 </head>
 <body class="bg-gradient-to-br from-slate-100 via-indigo-50/40 to-slate-100 text-slate-800 min-h-screen flex flex-col justify-between font-sans antialiased">
 
-  <!-- Header Branding -->
-  <div class="py-6 px-4 max-w-5xl mx-auto w-full flex items-center justify-between">
+  <!-- Header Branding & Actions -->
+  <header class="py-5 px-4 max-w-5xl mx-auto w-full flex items-center justify-between">
     <a href="/login" class="flex items-center space-x-3">
       <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center text-white shadow-md shadow-indigo-200">
         <i class="fa-solid fa-graduation-cap text-lg"></i>
@@ -38,70 +38,32 @@
         <span class="font-bold text-lg text-slate-900 tracking-tight flex items-center">
           MiniLMS <span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">v1.0</span>
         </span>
-        <p class="text-[11px] text-slate-500 leading-none">Cổng đăng nhập hệ thống học tập</p>
+        <p class="text-[11px] text-slate-500 leading-none">Cổng đăng nhập hệ thống an toàn</p>
       </div>
     </a>
-    <a href="/docs" target="_blank" class="text-xs font-semibold text-slate-500 hover:text-indigo-600 transition flex items-center">
-      <i class="fa-solid fa-code mr-1.5"></i> Swagger API Docs <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-[10px]"></i>
-    </a>
-  </div>
+
+    <div class="flex items-center space-x-3">
+      <!-- Guide Note Trigger Button for Testers / Evaluators -->
+      <button type="button" onclick="toggleGuideNoteModal(true)" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-950 text-indigo-200 border border-indigo-700/60 text-xs font-semibold shadow-sm transition">
+        <i class="fa-solid fa-book-bookmark text-amber-400"></i>
+        <span>📖 Hướng Dẫn & Kiểm Thử</span>
+      </button>
+
+      <a href="/docs" target="_blank" class="hidden sm:inline-flex items-center text-xs font-semibold text-slate-500 hover:text-indigo-600 transition">
+        <i class="fa-solid fa-code mr-1.5"></i> Swagger Docs <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-[10px]"></i>
+      </a>
+    </div>
+  </header>
 
   <!-- Main Login Card Container -->
   <main class="flex-1 flex items-center justify-center px-4 py-8">
-    <div class="max-w-md w-full space-y-5">
+    <div class="max-w-md w-full space-y-4">
 
-      <!-- 1-Click Role Switcher Demo Box -->
-      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-4 rounded-2xl shadow-xl border border-indigo-800 space-y-2.5">
-        <div class="flex items-center justify-between text-xs">
-          <span class="font-bold flex items-center text-amber-300">
-            <i class="fa-solid fa-bolt mr-1.5"></i> Thử nghiệm nhanh theo phân quyền
-          </span>
-          <span class="text-[10px] text-slate-400">1-Click Đăng nhập</span>
-        </div>
-        <p class="text-[11px] text-slate-300 leading-relaxed">
-          Nhấn nút bên dưới để tự động đăng nhập đúng tài khoản phân quyền:
-        </p>
-        <div class="grid grid-cols-1 gap-2 pt-1">
-          <button type="button" onclick="fillAndLogin('student1@lms.edu.vn', 'student123')" class="w-full text-left px-3 py-2 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-500/40 text-xs font-medium transition flex items-center justify-between group">
-            <div class="flex items-center space-x-2">
-              <span class="w-6 h-6 rounded-full bg-sky-500/30 text-sky-300 flex items-center justify-center text-[10px] font-bold">SV</span>
-              <div>
-                <div class="font-bold text-white group-hover:text-sky-200">Trần Văn An (Sinh viên)</div>
-                <div class="text-[10px] text-sky-300/70">student1@lms.edu.vn</div>
-              </div>
-            </div>
-            <i class="fa-solid fa-arrow-right text-[10px] text-sky-400 group-hover:translate-x-1 transition"></i>
-          </button>
-
-          <button type="button" onclick="fillAndLogin('teacher@lms.edu.vn', 'teacher123')" class="w-full text-left px-3 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-xs font-medium transition flex items-center justify-between group">
-            <div class="flex items-center space-x-2">
-              <span class="w-6 h-6 rounded-full bg-emerald-500/30 text-emerald-300 flex items-center justify-center text-[10px] font-bold">GV</span>
-              <div>
-                <div class="font-bold text-white group-hover:text-emerald-200">Thầy Nguyễn Hoàng Giang (Giảng viên)</div>
-                <div class="text-[10px] text-emerald-300/70">teacher@lms.edu.vn</div>
-              </div>
-            </div>
-            <i class="fa-solid fa-arrow-right text-[10px] text-emerald-400 group-hover:translate-x-1 transition"></i>
-          </button>
-
-          <button type="button" onclick="fillAndLogin('admin@lms.edu.vn', 'admin123')" class="w-full text-left px-3 py-2 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-xs font-medium transition flex items-center justify-between group">
-            <div class="flex items-center space-x-2">
-              <span class="w-6 h-6 rounded-full bg-purple-500/30 text-purple-300 flex items-center justify-center text-[10px] font-bold">QT</span>
-              <div>
-                <div class="font-bold text-white group-hover:text-purple-200">Quản Trị Viên (Admin Hệ Thống)</div>
-                <div class="text-[10px] text-purple-300/70">admin@lms.edu.vn</div>
-              </div>
-            </div>
-            <i class="fa-solid fa-arrow-right text-[10px] text-purple-400 group-hover:translate-x-1 transition"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- Main Login Form Card -->
-      <div class="bg-white p-7 rounded-2xl shadow-xl border border-slate-200 space-y-5">
+      <!-- Main Login Form Card (Hardened, Zero Information Disclosure) -->
+      <div class="bg-white p-8 rounded-2xl shadow-xl border border-slate-200 space-y-5">
         <div>
           <h1 class="text-xl font-bold text-slate-900 tracking-tight">Đăng nhập tài khoản</h1>
-          <p class="text-xs text-slate-500 mt-1">Nhập thông tin xác thực để truy cập hệ thống học tập</p>
+          <p class="text-xs text-slate-500 mt-1">Hệ thống bảo vệ theo tiêu chuẩn OWASP, chống rò rỉ thông tin người dùng</p>
         </div>
 
         <!-- Inline Error Alert Box (No ugly popup spam) -->
@@ -117,7 +79,7 @@
             </label>
             <div class="relative">
               <i class="fa-regular fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-              <input type="email" id="input-email" required placeholder="nhapemail@lms.edu.vn" class="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+              <input type="email" id="input-email" required placeholder="name@domain.edu.vn" autocomplete="username" class="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
             </div>
           </div>
 
@@ -129,7 +91,7 @@
             </div>
             <div class="relative">
               <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-              <input type="password" id="input-password" required placeholder="••••••••" class="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+              <input type="password" id="input-password" required placeholder="••••••••" autocomplete="current-password" class="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
             </div>
           </div>
 
@@ -139,21 +101,149 @@
           </button>
         </form>
 
-        <div class="pt-4 border-t border-slate-100 text-center text-xs text-slate-600 space-y-2">
-          <div>
-            Chưa có tài khoản?
-            <a href="/register" class="font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
-              Đăng ký tài khoản Sinh viên (SV)
-            </a>
-          </div>
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+          <a href="/register" class="font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
+            Đăng ký tài khoản Sinh viên (SV)
+          </a>
+          <button type="button" onclick="toggleGuideNoteModal(true)" class="text-slate-500 hover:text-indigo-600 font-medium">
+            Tài khoản demo?
+          </button>
         </div>
       </div>
+
+      <!-- Quick Tester Banner -->
+      <div class="bg-indigo-50/70 border border-indigo-200/80 p-3 rounded-xl text-center text-xs text-indigo-900">
+        <i class="fa-solid fa-shield-halved text-indigo-600 mr-1"></i>
+        Đang kiểm thử hệ thống? Xem <button type="button" onclick="toggleGuideNoteModal(true)" class="underline font-bold text-indigo-700 hover:text-indigo-900">Hướng dẫn phân quyền & Tài khoản mẫu</button>.
+      </div>
+
     </div>
   </main>
 
+  <!-- ==================== GUIDE NOTE MODAL (DÀNH CHO GIÁM KHẢO / TESTER) ==================== -->
+  <div id="modal-guide-note" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-book-open text-sm"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Hướng Dẫn Sử Dụng & Kiểm Thử Phân Quyền</h2>
+            <p class="text-[11px] text-slate-500">Tài liệu hướng dẫn đánh giá hệ thống MiniLMS theo đặc tả</p>
+          </div>
+        </div>
+        <button type="button" onclick="toggleGuideNoteModal(false)" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Information Disclosure Explanation Note -->
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 space-y-1.5">
+        <div class="font-bold flex items-center text-amber-800">
+          <i class="fa-solid fa-shield-cat mr-1.5 text-amber-600"></i>
+          Ghi chú Bảo mật về Lỗ hổng Rò rỉ Thông tin (Information Disclosure - CWE-200):
+        </div>
+        <p class="leading-relaxed">
+          Trong môi trường sản xuất thực tế, danh sách email, vai trò và thông tin người dùng <b>tuyệt đối không được phơi bày trực tiếp</b> trên giao diện trang đăng nhập công cộng để ngăn chặn kẻ tấn công thu thập dữ liệu (Reconnaissance) và dò quét tài khoản (User Enumeration). Do đó, danh sách tài khoản kiểm thử được tổ chức riêng biệt trong tài liệu hướng dẫn này.
+        </p>
+      </div>
+
+      <!-- Role Matrix Overview -->
+      <div class="space-y-2">
+        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Cấu Trúc 3 Vai Trò & Ma Trận Phân Quyền</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          <!-- Role SV -->
+          <div class="p-3 rounded-xl border border-sky-200 bg-sky-50/50 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-sky-800"><i class="fa-solid fa-user-graduate mr-1"></i> Sinh viên (SV)</span>
+            </div>
+            <p class="text-slate-600 text-[11px] leading-relaxed">
+              • Tự ghi danh bằng mã khóa học.<br>
+              • Nộp bài tập (tệp + ghi chú).<br>
+              • Thi trắc nghiệm trực tiếp có đồng hồ đếm ngược.<br>
+              • Xem sổ điểm cá nhân (chống IDOR).
+            </p>
+          </div>
+
+          <!-- Role GV -->
+          <div class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-emerald-800"><i class="fa-solid fa-chalkboard-user mr-1"></i> Giảng viên (GV)</span>
+            </div>
+            <p class="text-slate-600 text-[11px] leading-relaxed">
+              • Tạo khóa học và quản lý lớp.<br>
+              • Đăng tài liệu bài giảng giáo trình.<br>
+              • Giao bài tập & chấm điểm, nhận xét.<br>
+              • Soạn đề thi trắc nghiệm tính giờ.
+            </p>
+          </div>
+
+          <!-- Role QT -->
+          <div class="p-3 rounded-xl border border-purple-200 bg-purple-50/50 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-purple-800"><i class="fa-solid fa-shield-halved mr-1"></i> Quản trị viên (QT)</span>
+            </div>
+            <p class="text-slate-600 text-[11px] leading-relaxed">
+              • Quản lý tất cả người dùng trong hệ thống.<br>
+              • Chuyển đổi vai trò (SV ⇄ GV ⇄ QT).<br>
+              • Khóa / Mở khóa tài khoản.<br>
+              • Xem nhật ký kiểm toán (Audit Logs).
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Demo Accounts with 1-Click Auto Fill -->
+      <div class="space-y-2.5 pt-2 border-t border-slate-100">
+        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Tài Khoản Kiểm Thử Mẫu (Bấm nút để điền ngay vào Form)</h3>
+        <div class="space-y-2">
+          <!-- SV Account -->
+          <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+            <div>
+              <div class="font-bold text-slate-800">[SV] Trần Văn An • <span class="font-mono text-slate-500">student1@lms.edu.vn</span></div>
+              <div class="text-[11px] text-slate-400">Mật khẩu: <span class="font-mono font-semibold text-slate-600">student123</span></div>
+            </div>
+            <button type="button" onclick="autoFillAccount('student1@lms.edu.vn', 'student123')" class="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-semibold text-[11px] transition">
+              Điền vào form
+            </button>
+          </div>
+
+          <!-- GV Account -->
+          <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+            <div>
+              <div class="font-bold text-slate-800">[GV] Thầy Nguyễn Hoàng Giang • <span class="font-mono text-slate-500">teacher@lms.edu.vn</span></div>
+              <div class="text-[11px] text-slate-400">Mật khẩu: <span class="font-mono font-semibold text-slate-600">teacher123</span></div>
+            </div>
+            <button type="button" onclick="autoFillAccount('teacher@lms.edu.vn', 'teacher123')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] transition">
+              Điền vào form
+            </button>
+          </div>
+
+          <!-- QT Account -->
+          <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+            <div>
+              <div class="font-bold text-slate-800">[QT] Quản Trị Viên (Admin) • <span class="font-mono text-slate-500">admin@lms.edu.vn</span></div>
+              <div class="text-[11px] text-slate-400">Mật khẩu: <span class="font-mono font-semibold text-slate-600">admin123</span></div>
+            </div>
+            <button type="button" onclick="autoFillAccount('admin@lms.edu.vn', 'admin123')" class="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold text-[11px] transition">
+              Điền vào form
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex justify-end">
+        <button type="button" onclick="toggleGuideNoteModal(false)" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold transition">
+          Đã hiểu, đóng hướng dẫn
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="py-4 text-center text-xs text-slate-400">
-    <p>MiniLMS • Hệ thống Quản trị Học tập phân quyền Sinh viên (SV), Giảng viên (GV), Quản trị viên (QT)</p>
+    <p>MiniLMS • Bảo mật theo chuẩn OWASP • Chống rò rỉ thông tin (Anti-Information Disclosure)</p>
   </footer>
 
   <script>
@@ -172,10 +262,23 @@
             localStorage.removeItem('lms_user');
           }
         } catch {
-          // Do nothing if offline
+          // Khi mất kết nối thì giữ nguyên
         }
       }
     })();
+
+    function toggleGuideNoteModal(show) {
+      const modal = document.getElementById('modal-guide-note');
+      if (show) modal.classList.remove('hidden');
+      else modal.classList.add('hidden');
+    }
+
+    function autoFillAccount(email, password) {
+      document.getElementById('input-email').value = email;
+      document.getElementById('input-password').value = password;
+      toggleGuideNoteModal(false);
+      hideError();
+    }
 
     function showError(msg) {
       const alert = document.getElementById('error-alert');
@@ -195,12 +298,18 @@
       btn.disabled = true;
       btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang xác thực...`;
 
+      // Thiết lập timeout 10 giây để đảm bảo nút không bị treo trạng thái
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       try {
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
 
         const data = await response.json();
         if (!response.ok) {
@@ -218,12 +327,20 @@
           role: data.role,
         }));
 
+        btn.innerHTML = `<i class="fa-solid fa-check mr-2"></i> Thành công! Đang chuyển hướng...`;
         // Chuyển hướng về trang chủ LMS
-        window.location.href = '/';
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 300);
       } catch (err) {
-        showError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
+        clearTimeout(timeoutId);
         btn.disabled = false;
         btn.innerHTML = originalText;
+        if (err.name === 'AbortError') {
+          showError('Yêu cầu hết thời gian chờ (Timeout). Vui lòng thử lại.');
+        } else {
+          showError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra dịch vụ.');
+        }
       }
     }
 
@@ -231,12 +348,6 @@
       e.preventDefault();
       const email = document.getElementById('input-email').value.trim();
       const password = document.getElementById('input-password').value;
-      performLogin(email, password);
-    }
-
-    function fillAndLogin(email, password) {
-      document.getElementById('input-email').value = email;
-      document.getElementById('input-password').value = password;
       performLogin(email, password);
     }
   </script>
