@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiniLMS - Hệ Thống Quản Trị Học Tập Trực Tuyến</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    [x-cloak] { display: none !important; }
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans antialiased">
+
+  <!-- ==================== TOP DEMO ROLE SWITCHER BAR ==================== -->
+  <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white text-xs py-2 px-4 border-b border-indigo-800">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center space-x-2">
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+          <i class="fa-solid fa-bolt mr-1 text-amber-400"></i> Demo Chuyển Vai Trò (1-Click)
+        </span>
+        <span class="hidden md:inline text-slate-300">Nhấn để đăng nhập ngay tài khoản theo phân quyền:</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button onclick="quickLogin('student1@lms.edu.vn', 'student123')" class="px-2.5 py-1 rounded bg-sky-600/80 hover:bg-sky-500 text-white font-medium transition flex items-center shadow-sm">
+          <i class="fa-solid fa-user-graduate mr-1.5 text-sky-200"></i> [SV] Sinh viên An
+        </button>
+        <button onclick="quickLogin('teacher@lms.edu.vn', 'teacher123')" class="px-2.5 py-1 rounded bg-emerald-600/80 hover:bg-emerald-500 text-white font-medium transition flex items-center shadow-sm">
+          <i class="fa-solid fa-chalkboard-user mr-1.5 text-emerald-200"></i> [GV] Thầy Giang
+        </button>
+        <button onclick="quickLogin('admin@lms.edu.vn', 'admin123')" class="px-2.5 py-1 rounded bg-purple-600/80 hover:bg-purple-500 text-white font-medium transition flex items-center shadow-sm">
+          <i class="fa-solid fa-shield-halved mr-1.5 text-purple-200"></i> [QT] Quản Trị Viên
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN HEADER & NAVIGATION ==================== -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Brand Logo -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('courses')">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+          <i class="fa-solid fa-graduation-cap text-lg"></i>
+        </div>
+        <div>
+          <span class="font-bold text-lg text-slate-900 tracking-tight flex items-center">
+            MiniLMS <span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">v1.0</span>
+          </span>
+          <p class="text-[11px] text-slate-500 leading-none">Hệ thống Quản trị Học tập</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="hidden md:flex items-center space-x-1" id="nav-tabs">
+        <button onclick="navigateTo('courses')" id="tab-courses" class="nav-tab px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 transition flex items-center">
+          <i class="fa-solid fa-book-open mr-2 text-slate-400"></i> Khóa học
+        </button>
+        <button onclick="navigateTo('my-grades')" id="tab-my-grades" class="nav-tab px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 transition flex items-center">
+          <i class="fa-solid fa-chart-simple mr-2 text-slate-400"></i> Sổ điểm của tôi
+        </button>
+        <button onclick="navigateTo('admin')" id="tab-admin" class="nav-tab hidden px-3 py-2 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition flex items-center">
+          <i class="fa-solid fa-shield-halved mr-2 text-purple-500"></i> Quản trị hệ thống (QT)
+        </button>
+        <a href="/docs" target="_blank" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition flex items-center">
+          <i class="fa-solid fa-code mr-1.5 text-slate-400"></i> API Docs <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-[10px] text-slate-400"></i>
+        </a>
+      </nav>
+
+      <!-- User Menu / Auth Actions -->
+      <div class="flex items-center space-x-3">
+        <!-- Logged In Container -->
+        <div id="user-logged-in" class="hidden flex items-center space-x-3">
+          <div class="flex items-center space-x-2 pl-3 border-l border-slate-200">
+            <div id="user-role-badge" class="px-2 py-0.5 rounded-full text-xs font-bold border">
+              <!-- Render role e.g. SV / GV / QT -->
+            </div>
+            <div class="text-right hidden sm:block">
+              <div id="user-display-name" class="text-sm font-semibold text-slate-800 leading-tight">...</div>
+              <div id="user-display-email" class="text-[11px] text-slate-500 leading-tight">...</div>
+            </div>
+          </div>
+
+          <div class="relative">
+            <button onclick="toggleUserDropdown()" class="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition">
+              <i class="fa-solid fa-user"></i>
+            </button>
+            <!-- Dropdown Menu -->
+            <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 z-50 text-sm">
+              <div class="px-3 py-2 border-b border-slate-100 sm:hidden">
+                <div id="user-mobile-name" class="font-semibold text-slate-800"></div>
+                <div id="user-mobile-role" class="text-xs text-slate-500"></div>
+              </div>
+              <button onclick="openProfileModal(); toggleUserDropdown(false)" class="w-full text-left px-4 py-2 hover:bg-slate-50 text-slate-700 flex items-center">
+                <i class="fa-solid fa-id-badge w-5 mr-2 text-slate-400"></i> Hồ sơ cá nhân
+              </button>
+              <button onclick="openChangePasswordModal(); toggleUserDropdown(false)" class="w-full text-left px-4 py-2 hover:bg-slate-50 text-slate-700 flex items-center">
+                <i class="fa-solid fa-key w-5 mr-2 text-slate-400"></i> Đổi mật khẩu
+              </button>
+              <div class="border-t border-slate-100 my-1"></div>
+              <button onclick="logout(); toggleUserDropdown(false)" class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 flex items-center font-medium">
+                <i class="fa-solid fa-right-from-bracket w-5 mr-2 text-red-500"></i> Đăng xuất
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Logged Out Container -->
+        <div id="user-logged-out" class="flex items-center space-x-2">
+          <button onclick="openLoginModal()" class="px-3.5 py-1.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition">
+            Đăng nhập
+          </button>
+          <button onclick="openRegisterModal()" class="px-3.5 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm shadow-indigo-200">
+            Đăng ký SV
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== NOTIFICATION TOAST ==================== -->
+  <div id="toast-container" class="fixed top-20 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ----------------- VIEW 1: COURSE CATALOG (DANH SÁCH KHÓA HỌC) ----------------- -->
+    <section id="view-courses" class="space-y-6">
+      <!-- Action & Search Toolbar -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-xl font-bold text-slate-900 tracking-tight">Danh sách Khóa học</h1>
+          <p class="text-xs text-slate-500 mt-0.5">Khám phá các khóa học công nghệ thông tin và nâng cao kiến thức</p>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Search input -->
+          <div class="relative flex-1 sm:w-64">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" id="course-search-input" oninput="debounceSearchCourses()" placeholder="Tìm khóa học, mã môn..." class="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+          </div>
+
+          <!-- Buttons based on role -->
+          <button id="btn-open-enroll" onclick="openEnrollModal()" class="hidden px-3.5 py-2 rounded-xl text-sm font-medium bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition items-center">
+            <i class="fa-solid fa-key mr-1.5 text-sky-600"></i> Ghi danh bằng mã
+          </button>
+          <button id="btn-open-create-course" onclick="openCreateCourseModal()" class="hidden px-3.5 py-2 rounded-xl text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm items-center">
+            <i class="fa-solid fa-plus mr-1.5"></i> Tạo khóa học mới
+          </button>
+        </div>
+      </div>
+
+      <!-- Course Cards Grid -->
+      <div id="courses-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Render courses dynamically -->
+      </div>
+    </section>
+
+    <!-- ----------------- VIEW 2: COURSE DETAIL (CHI TIẾT KHÓA HỌC) ----------------- -->
+    <section id="view-course-detail" class="hidden space-y-6">
+      <!-- Course Header -->
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+              <button onclick="navigateTo('courses')" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center">
+                <i class="fa-solid fa-arrow-left mr-1"></i> Quay lại danh sách
+              </button>
+              <span class="text-slate-300">/</span>
+              <span id="detail-course-code" class="px-2 py-0.5 rounded text-xs font-bold bg-indigo-100 text-indigo-700">CS101</span>
+            </div>
+            <h1 id="detail-course-title" class="text-2xl font-bold text-slate-900 tracking-tight">Tên khóa học</h1>
+            <p id="detail-course-desc" class="text-sm text-slate-600 max-w-3xl">Mô tả khóa học</p>
+          </div>
+          <div class="flex items-center space-x-3 bg-slate-50 p-3 rounded-xl border border-slate-200/60 self-start md:self-auto">
+            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
+              <i class="fa-solid fa-user-tie"></i>
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">Giảng viên (GV)</div>
+              <div id="detail-course-instructor" class="text-sm font-bold text-slate-800">Thầy Giang</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Course Sub-Tabs -->
+        <div class="flex flex-wrap items-center gap-1 mt-4 text-sm font-medium border-b border-slate-100 pb-1" id="course-subtabs">
+          <button onclick="switchCourseSubTab('forum')" id="subtab-forum" class="px-3.5 py-2 rounded-lg text-indigo-600 bg-indigo-50 transition flex items-center">
+            <i class="fa-solid fa-comments mr-2"></i> Diễn đàn & Thông báo
+          </button>
+          <button onclick="switchCourseSubTab('materials')" id="subtab-materials" class="px-3.5 py-2 rounded-lg text-slate-600 hover:bg-slate-100 transition flex items-center">
+            <i class="fa-solid fa-folder-open mr-2 text-slate-400"></i> Tài liệu bài giảng
+          </button>
+          <button onclick="switchCourseSubTab('assignments')" id="subtab-assignments" class="px-3.5 py-2 rounded-lg text-slate-600 hover:bg-slate-100 transition flex items-center">
+            <i class="fa-solid fa-file-pen mr-2 text-slate-400"></i> Bài tập
+          </button>
+          <button onclick="switchCourseSubTab('quizzes')" id="subtab-quizzes" class="px-3.5 py-2 rounded-lg text-slate-600 hover:bg-slate-100 transition flex items-center">
+            <i class="fa-solid fa-stopwatch mr-2 text-slate-400"></i> Trắc nghiệm
+          </button>
+          <button onclick="switchCourseSubTab('members')" id="subtab-members" class="px-3.5 py-2 rounded-lg text-slate-600 hover:bg-slate-100 transition flex items-center">
+            <i class="fa-solid fa-users mr-2 text-slate-400"></i> Thành viên lớp
+          </button>
+          <button onclick="switchCourseSubTab('gradebook')" id="subtab-gradebook" class="px-3.5 py-2 rounded-lg text-slate-600 hover:bg-slate-100 transition flex items-center">
+            <i class="fa-solid fa-award mr-2 text-slate-400"></i> Bảng điểm
+          </button>
+        </div>
+      </div>
+
+      <!-- Sub-Tab Content: 1. FORUM & ANNOUNCEMENTS -->
+      <div id="pane-forum" class="space-y-6">
+        <!-- Announcements Section -->
+        <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-amber-900 uppercase tracking-wide flex items-center">
+              <i class="fa-solid fa-bullhorn mr-2 text-amber-600"></i> Thông báo từ Giảng viên
+            </h3>
+            <button id="btn-open-create-announcement" onclick="openCreateAnnouncementModal()" class="hidden px-2.5 py-1 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition">
+              + Đăng thông báo
+            </button>
+          </div>
+          <div id="announcements-list" class="space-y-2">
+            <!-- Render announcements -->
+          </div>
+        </div>
+
+        <!-- Forum Topics Section -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Diễn đàn Trao đổi & Thảo luận</h3>
+              <p class="text-xs text-slate-500">Đặt câu hỏi thắc mắc hoặc thảo luận về bài học cùng giảng viên và các bạn sinh viên</p>
+            </div>
+            <button onclick="openCreateTopicModal()" class="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition shadow-sm">
+              <i class="fa-solid fa-plus mr-1"></i> Đăng câu hỏi mới
+            </button>
+          </div>
+
+          <div id="topics-list" class="space-y-3 divide-y divide-slate-100">
+            <!-- Render topics -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-Tab Content: 2. MATERIALS -->
+      <div id="pane-materials" class="hidden bg-white border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Tài liệu & Bài giảng</h3>
+            <p class="text-xs text-slate-500">Giáo trình, slide bài giảng và tài nguyên thực hành</p>
+          </div>
+          <button id="btn-open-upload-material" onclick="openUploadMaterialModal()" class="hidden px-3.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition shadow-sm">
+            <i class="fa-solid fa-cloud-arrow-up mr-1.5"></i> Tải lên tài liệu
+          </button>
+        </div>
+        <div id="materials-list" class="divide-y divide-slate-100">
+          <!-- Render materials -->
+        </div>
+      </div>
+
+      <!-- Sub-Tab Content: 3. ASSIGNMENTS -->
+      <div id="pane-assignments" class="hidden bg-white border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Danh sách Bài tập</h3>
+            <p class="text-xs text-slate-500">Nộp bài tập trực tuyến và nhận phản hồi chấm điểm từ Giảng viên</p>
+          </div>
+          <button id="btn-open-create-assignment" onclick="openCreateAssignmentModal()" class="hidden px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition shadow-sm">
+            <i class="fa-solid fa-plus mr-1.5"></i> Giao bài tập mới
+          </button>
+        </div>
+        <div id="assignments-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Render assignments -->
+        </div>
+      </div>
+
+      <!-- Sub-Tab Content: 4. QUIZZES -->
+      <div id="pane-quizzes" class="hidden bg-white border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Bài kiểm tra Trắc nghiệm</h3>
+            <p class="text-xs text-slate-500">Kiểm tra kiến thức trực tuyến với thời gian làm bài đếm ngược và chấm điểm tự động</p>
+          </div>
+          <button id="btn-open-create-quiz" onclick="openCreateQuizModal()" class="hidden px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition shadow-sm">
+            <i class="fa-solid fa-plus mr-1.5"></i> Soạn bài trắc nghiệm
+          </button>
+        </div>
+        <div id="quizzes-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Render quizzes -->
+        </div>
+      </div>
+
+      <!-- Sub-Tab Content: 5. MEMBERS -->
+      <div id="pane-members" class="hidden bg-white border border-slate-200 rounded-2xl p-6 space-y-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Danh sách Lớp & Thành viên</h3>
+            <p class="text-xs text-slate-500">Giảng viên phụ trách và các sinh viên đã ghi danh vào khóa học này</p>
+          </div>
+          <!-- Instructor add student form -->
+          <div id="instructor-add-student-box" class="hidden flex items-center space-x-2">
+            <input type="email" id="add-student-email" placeholder="Email sinh viên (SV)..." class="text-xs px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button onclick="instructorEnrollStudent()" class="px-3 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition">
+              + Thêm vào lớp
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold border-y border-slate-100">
+              <tr>
+                <th class="py-3 px-4">Họ và tên</th>
+                <th class="py-3 px-4">Vai trò</th>
+                <th class="py-3 px-4">Giới thiệu (Bio)</th>
+              </tr>
+            </thead>
+            <tbody id="course-members-table" class="divide-y divide-slate-100">
+              <!-- Render members -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sub-Tab Content: 6. GRADEBOOK -->
+      <div id="pane-gradebook" class="hidden bg-white border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Bảng điểm Khóa học</h3>
+          <p class="text-xs text-slate-500">Theo dõi kết quả học tập, điểm bài tập và bài trắc nghiệm</p>
+        </div>
+        <div id="gradebook-content" class="overflow-x-auto">
+          <!-- Render gradebook table -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ----------------- VIEW 3: MY GRADES (SỔ ĐIỂM CỦA TÔI - SV) ----------------- -->
+    <section id="view-my-grades" class="hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div>
+          <h1 class="text-xl font-bold text-slate-900 tracking-tight">Sổ Điểm & Tiến Độ Học Tập Cá Nhân</h1>
+          <p class="text-xs text-slate-500">Tổng hợp điểm số các bài tập và phản hồi từ giảng viên của bạn</p>
+        </div>
+        <div id="my-grades-table-container" class="overflow-x-auto">
+          <!-- Render personal gradebook -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ----------------- VIEW 4: ADMIN PORTAL (QUẢN TRỊ HỆ THỐNG - QT ONLY) ----------------- -->
+    <section id="view-admin" class="hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex items-center space-x-3 border-b border-slate-100 pb-4">
+          <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-slate-900">Cổng Quản Trị Hệ Thống (QT)</h1>
+            <p class="text-xs text-slate-500">Quản lý người dùng, phân quyền SV/GV/QT, gỡ bỏ khóa học và kiểm toán bảo mật</p>
+          </div>
+        </div>
+
+        <!-- Admin Sub-tabs -->
+        <div class="flex items-center space-x-2 mt-4 text-sm font-medium border-b border-slate-100 pb-2">
+          <button onclick="switchAdminSubTab('users')" id="admin-tab-users" class="px-3.5 py-1.5 rounded-lg text-purple-700 bg-purple-50 transition">
+            <i class="fa-solid fa-users-gear mr-1.5"></i> Quản lý Người dùng
+          </button>
+          <button onclick="switchAdminSubTab('courses')" id="admin-tab-courses" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">
+            <i class="fa-solid fa-book mr-1.5"></i> Quản lý Khóa học
+          </button>
+          <button onclick="switchAdminSubTab('audit')" id="admin-tab-audit" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition">
+            <i class="fa-solid fa-list-check mr-1.5"></i> Nhật ký Kiểm toán (Audit Logs)
+          </button>
+        </div>
+      </div>
+
+      <!-- Admin Tab: 1. Users Management -->
+      <div id="admin-pane-users" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div class="relative sm:w-72">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" id="admin-user-search" oninput="debounceAdminUsers()" placeholder="Tìm người dùng theo tên/email..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs text-slate-500">Lọc vai trò:</span>
+            <select id="admin-role-filter" onchange="loadAdminUsers()" class="text-xs px-2.5 py-1.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none">
+              <option value="">Tất cả vai trò</option>
+              <option value="SV">Sinh viên (SV)</option>
+              <option value="GV">Giảng viên (GV)</option>
+              <option value="QT">Quản trị viên (QT)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-y border-slate-100">
+              <tr>
+                <th class="py-3 px-4">ID</th>
+                <th class="py-3 px-4">Họ và tên</th>
+                <th class="py-3 px-4">Email</th>
+                <th class="py-3 px-4">Vai trò (Phân quyền)</th>
+                <th class="py-3 px-4">Trạng thái</th>
+                <th class="py-3 px-4 text-right">Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="admin-users-table" class="divide-y divide-slate-100">
+              <!-- Render users list -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Admin Tab: 2. Courses Management -->
+      <div id="admin-pane-courses" class="hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-slate-900">Danh sách Khóa học Toàn Hệ thống</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-y border-slate-100">
+              <tr>
+                <th class="py-3 px-4">Mã môn</th>
+                <th class="py-3 px-4">Tên khóa học</th>
+                <th class="py-3 px-4">Giảng viên phụ trách</th>
+                <th class="py-3 px-4">Ngày tạo</th>
+                <th class="py-3 px-4 text-right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="admin-courses-table" class="divide-y divide-slate-100">
+              <!-- Render all courses -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Admin Tab: 3. Security Audit Logs -->
+      <div id="admin-pane-audit" class="hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Nhật Ký Kiểm Toán An Toàn (Audit Trail)</h3>
+            <p class="text-[11px] text-slate-500">Ghi lại toàn bộ hành động nhạy cảm để phát hiện xâm nhập và leo thang đặc quyền</p>
+          </div>
+          <button onclick="loadAdminAuditLogs()" class="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition flex items-center">
+            <i class="fa-solid fa-arrows-rotate mr-1.5"></i> Làm mới
+          </button>
+        </div>
+
+        <div class="overflow-x-auto custom-scroll max-h-[600px]">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-y border-slate-100 sticky top-0">
+              <tr>
+                <th class="py-3 px-4">Thời gian</th>
+                <th class="py-3 px-4">Hành động</th>
+                <th class="py-3 px-4">Đối tượng</th>
+                <th class="py-3 px-4">User ID</th>
+                <th class="py-3 px-4">Chi tiết</th>
+                <th class="py-3 px-4">Địa chỉ IP</th>
+              </tr>
+            </thead>
+            <tbody id="admin-audit-table" class="divide-y divide-slate-100 font-mono text-[11px]">
+              <!-- Render logs -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- 1. LOGIN MODAL -->
+  <div id="modal-login" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-slate-900">Đăng Nhập MiniLMS</h3>
+        <button onclick="closeModal('modal-login')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleLoginSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Địa chỉ Email</label>
+          <input type="email" id="login-email" required placeholder="nhapemail@lms.edu.vn" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu</label>
+          <input type="password" id="login-password" required placeholder="••••••••" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <button type="button" onclick="openForgotPasswordModal()" class="text-indigo-600 hover:underline">Quên mật khẩu?</button>
+          <button type="button" onclick="closeModal('modal-login'); openRegisterModal()" class="text-slate-500 hover:text-slate-800">Chưa có tài khoản? <span class="text-indigo-600 font-semibold">Đăng ký SV</span></button>
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-md shadow-indigo-200">
+          Đăng nhập
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. REGISTER MODAL (Sinh viên SV Only) -->
+  <div id="modal-register" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-bold text-slate-900">Đăng Ký Tài Khoản Sinh Viên</h3>
+          <p class="text-xs text-slate-500">Mặc định tài khoản mới sẽ có vai trò là Sinh viên (SV)</p>
+        </div>
+        <button onclick="closeModal('modal-register')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleRegisterSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Họ và tên</label>
+          <input type="text" id="reg-fullname" required placeholder="Nguyễn Văn A" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Địa chỉ Email</label>
+          <input type="email" id="reg-email" required placeholder="sinhvien@example.com" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu (tối thiểu 8 ký tự)</label>
+          <input type="password" id="reg-password" minlength="8" required placeholder="••••••••" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-md shadow-indigo-200">
+          Xác nhận Đăng ký
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. ENROLL MODAL (SV) -->
+  <div id="modal-enroll" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Ghi Danh Bằng Mã Khóa Học</h3>
+        <button onclick="closeModal('modal-enroll')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleEnrollSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Mã khóa học (Ví dụ: CS101, CS202)</label>
+          <input type="text" id="enroll-course-code" required placeholder="CS101" class="uppercase w-full px-3 py-2 text-sm font-mono border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm transition shadow-md shadow-sky-200">
+          Ghi danh ngay
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. CREATE COURSE MODAL (GV / QT) -->
+  <div id="modal-create-course" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-slate-900">Tạo Khóa Học Mới</h3>
+        <button onclick="closeModal('modal-create-course')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleCreateCourseSubmit(event)" class="space-y-3">
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Mã môn học</label>
+            <input type="text" id="new-course-code" required placeholder="CS303" class="uppercase w-full px-3 py-2 text-sm font-mono border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tên khóa học</label>
+            <input type="text" id="new-course-title" required placeholder="Lập trình Web An toàn" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Mô tả khóa học</label>
+          <textarea id="new-course-desc" rows="3" placeholder="Nội dung, mục tiêu và yêu cầu tiên quyết của môn học..." class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-md shadow-indigo-200">
+          Lưu & Khởi tạo Khóa học
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. UPLOAD MATERIAL MODAL (GV / QT) -->
+  <div id="modal-upload-material" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Tải Lên Tài Liệu Bài Giảng</h3>
+        <button onclick="closeModal('modal-upload-material')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleUploadMaterialSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Tiêu đề tài liệu</label>
+          <input type="text" id="material-title" required placeholder="Giáo trình Tuần 1: Nhập môn" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Chọn tệp (.pdf, .docx, .zip, .pptx)</label>
+          <input type="file" id="material-file" required class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition shadow-md shadow-emerald-200">
+          Tải lên ngay
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. CREATE ASSIGNMENT MODAL (GV / QT) -->
+  <div id="modal-create-assignment" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-slate-900">Giao Bài Tập Mới</h3>
+        <button onclick="closeModal('modal-create-assignment')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleCreateAssignmentSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Tiêu đề bài tập</label>
+          <input type="text" id="assign-title" required placeholder="Bài tập 2: Thiết kế Database & Unit Tests" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Mô tả & Hướng dẫn làm bài</label>
+          <textarea id="assign-desc" rows="3" required placeholder="Yêu cầu sinh viên hoàn thành file mã nguồn..." class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Hạn nộp (Deadline)</label>
+            <input type="datetime-local" id="assign-deadline" required class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Thang điểm tối đa</label>
+            <input type="number" id="assign-max-score" min="1" max="100" value="10" step="0.5" required class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-md shadow-indigo-200">
+          Phát hành Bài tập
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 7. ASSIGNMENT DETAIL & SUBMISSION / GRADING MODAL -->
+  <div id="modal-assignment-detail" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <span class="text-[11px] font-semibold text-indigo-600 uppercase tracking-wider">Chi tiết bài tập</span>
+          <h3 id="modal-assign-title" class="text-lg font-bold text-slate-900">Tiêu đề bài tập</h3>
+        </div>
+        <button onclick="closeModal('modal-assignment-detail')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="space-y-2 text-sm">
+        <p id="modal-assign-desc" class="text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200/60 leading-relaxed"></p>
+        <div class="flex items-center space-x-4 text-xs text-slate-500">
+          <span><i class="fa-regular fa-clock mr-1 text-slate-400"></i> Hạn chót: <b id="modal-assign-deadline" class="text-slate-700"></b></span>
+          <span><i class="fa-solid fa-star mr-1 text-amber-500"></i> Điểm tối đa: <b id="modal-assign-max-score" class="text-slate-700"></b></span>
+        </div>
+      </div>
+
+      <!-- Sinh viên View: Submit or View My Submission -->
+      <div id="assign-student-view" class="hidden space-y-3 pt-3 border-t border-slate-100">
+        <h4 class="text-sm font-bold text-slate-900 flex items-center">
+          <i class="fa-solid fa-paper-plane mr-2 text-sky-600"></i> Bài Nộp Của Bạn
+        </h4>
+        <div id="student-submission-status" class="p-4 rounded-xl border">
+          <!-- Render my submission status -->
+        </div>
+        <form id="form-submit-assignment" onsubmit="handleStudentSubmitAssignment(event)" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tải lên tệp bài làm (.zip, .pdf, .docx, .py)</label>
+            <input type="file" id="submit-file" required class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
+          </div>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold text-xs transition shadow-sm">
+            Nộp bài tập
+          </button>
+        </form>
+      </div>
+
+      <!-- Giảng viên View: List of Submissions & Grading -->
+      <div id="assign-teacher-view" class="hidden space-y-3 pt-3 border-t border-slate-100">
+        <h4 class="text-sm font-bold text-slate-900 flex items-center">
+          <i class="fa-solid fa-list-check mr-2 text-emerald-600"></i> Danh Sách Bài Nộp Của Sinh Viên
+        </h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-y border-slate-100">
+              <tr>
+                <th class="py-2.5 px-3">Sinh viên</th>
+                <th class="py-2.5 px-3">Tệp nộp</th>
+                <th class="py-2.5 px-3">Thời gian</th>
+                <th class="py-2.5 px-3">Điểm số</th>
+                <th class="py-2.5 px-3">Nhận xét</th>
+                <th class="py-2.5 px-3 text-right">Lưu điểm</th>
+              </tr>
+            </thead>
+            <tbody id="assign-submissions-table" class="divide-y divide-slate-100">
+              <!-- Render student submissions for grading -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. CREATE QUIZ MODAL (GV / QT) -->
+  <div id="modal-create-quiz" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-bold text-slate-900">Soạn Bài Kiểm Tra Trắc Nghiệm</h3>
+        <button onclick="closeModal('modal-create-quiz')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form onsubmit="handleCreateQuizSubmit(event)" class="space-y-4">
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-2">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tiêu đề bài trắc nghiệm</label>
+            <input type="text" id="quiz-title" required placeholder="Kiểm tra kiến thức Python 3.12" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Thời gian (phút)</label>
+            <input type="number" id="quiz-time-limit" min="1" max="180" value="15" required class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Mô tả đề thi</label>
+          <input type="text" id="quiz-desc" placeholder="Gồm 3 câu hỏi trắc nghiệm tự động chấm..." class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <!-- Questions Builder Container -->
+        <div class="space-y-3 pt-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-800 uppercase tracking-wider">Danh Sách Câu Hỏi</label>
+            <button type="button" onclick="addQuizQuestionBuilder()" class="px-2.5 py-1 text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg transition">
+              + Thêm câu hỏi
+            </button>
+          </div>
+          <div id="quiz-questions-builder" class="space-y-4">
+            <!-- Render questions builder dynamically -->
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-md shadow-indigo-200">
+          Xuất bản Đề kiểm tra
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 9. TAKE QUIZ MODAL (SV) with Live Countdown Timer -->
+  <div id="modal-take-quiz" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[95vh] flex flex-col">
+      <!-- Quiz Header with Timer -->
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <span class="text-xs font-semibold text-indigo-600 uppercase">Đang làm bài trắc nghiệm</span>
+          <h3 id="take-quiz-title" class="text-lg font-bold text-slate-900">Tiêu đề bài kiểm tra</h3>
+        </div>
+        <!-- Live Countdown Timer -->
+        <div class="flex items-center space-x-2 bg-red-50 text-red-600 px-3.5 py-1.5 rounded-xl border border-red-200 font-mono font-bold text-sm">
+          <i class="fa-solid fa-stopwatch animate-pulse"></i>
+          <span id="quiz-countdown-timer">15:00</span>
+        </div>
+      </div>
+
+      <!-- Questions List (Never contains is_correct to prevent cheats) -->
+      <div id="take-quiz-questions" class="flex-1 overflow-y-auto custom-scroll space-y-6 py-2">
+        <!-- Render questions and radio options -->
+      </div>
+
+      <!-- Action buttons -->
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+        <span class="text-xs text-slate-500"><i class="fa-solid fa-shield-cat mr-1 text-indigo-500"></i> Bài thi tự động lưu và chấm điểm khi nộp</span>
+        <button onclick="submitQuizAnswers()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-md shadow-indigo-200">
+          Nộp Bài Kiểm Tra
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. CREATE FORUM TOPIC MODAL -->
+  <div id="modal-create-topic" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Đăng Chủ Đề Thảo Luận Mới</h3>
+        <button onclick="closeModal('modal-create-topic')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleCreateTopicSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Tiêu đề chủ đề</label>
+          <input type="text" id="topic-title" required placeholder="Thắc mắc về cấu hình linter ruff..." class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nội dung chi tiết</label>
+          <textarea id="topic-content" rows="4" required placeholder="Mô tả câu hỏi hoặc nội dung bạn muốn trao đổi..." class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-md shadow-indigo-200">
+          Đăng bài thảo luận
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 11. CREATE ANNOUNCEMENT MODAL (GV / QT) -->
+  <div id="modal-create-announcement" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Tạo Thông Báo Mới</h3>
+        <button onclick="closeModal('modal-create-announcement')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleCreateAnnouncementSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Tiêu đề thông báo</label>
+          <input type="text" id="announce-title" required placeholder="Lịch thi giữa kỳ môn học..." class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nội dung thông báo</label>
+          <textarea id="announce-content" rows="4" required placeholder="Các em lưu ý kiểm tra lịch thi và chuẩn bị bài tập..." class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm transition shadow-md shadow-amber-200">
+          Gửi Thông Báo (Tự động gửi email)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 12. FORUM TOPIC DETAIL & COMMENTS MODAL -->
+  <div id="modal-topic-detail" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <span class="text-xs text-indigo-600 font-semibold uppercase">Thảo luận môn học</span>
+          <h3 id="modal-topic-title" class="text-lg font-bold text-slate-900">Tiêu đề chủ đề</h3>
+          <div class="text-xs text-slate-400 mt-0.5">Người đăng: <span id="modal-topic-author" class="font-medium text-slate-700"></span> • <span id="modal-topic-time"></span></div>
+        </div>
+        <button onclick="closeModal('modal-topic-detail')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div id="modal-topic-content" class="text-sm text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-200/60 leading-relaxed whitespace-pre-wrap"></div>
+
+      <!-- Comments list -->
+      <div class="space-y-3 pt-3">
+        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center">
+          <i class="fa-solid fa-comments mr-2 text-indigo-600"></i> Bình Luận (<span id="modal-topic-comment-count">0</span>)
+        </h4>
+        <div id="modal-topic-comments" class="space-y-2.5">
+          <!-- Render comments -->
+        </div>
+
+        <!-- Add comment form -->
+        <form onsubmit="handlePostCommentSubmit(event)" class="pt-2 flex items-center space-x-2">
+          <input type="text" id="new-comment-content" required placeholder="Viết phản hồi bình luận của bạn..." class="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <button type="submit" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition shadow-sm">
+            Gửi
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13. USER PROFILE MODAL -->
+  <div id="modal-profile" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-slate-900">Hồ Sơ Cá Nhân</h3>
+        <button onclick="closeModal('modal-profile')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleUpdateProfileSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Họ và tên</label>
+          <input type="text" id="prof-fullname" required class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Email (Chỉ xem)</label>
+          <input type="email" id="prof-email" disabled class="w-full px-3 py-2 text-sm bg-slate-100 text-slate-500 border border-slate-200 rounded-xl cursor-not-allowed">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Vai trò hệ thống</label>
+          <input type="text" id="prof-role" disabled class="w-full px-3 py-2 text-sm bg-slate-100 font-semibold border border-slate-200 rounded-xl cursor-not-allowed">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Giới thiệu bản thân (Bio)</label>
+          <textarea id="prof-bio" rows="2" placeholder="Sở thích, chuyên ngành..." class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Thông tin liên hệ</label>
+          <input type="text" id="prof-contact" placeholder="Số điện thoại hoặc link GitHub" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-md shadow-indigo-200">
+          Cập nhật Hồ sơ
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 14. CHANGE PASSWORD MODAL -->
+  <div id="modal-change-password" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Đổi Mật Khẩu</h3>
+        <button onclick="closeModal('modal-change-password')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleChangePasswordSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu hiện tại</label>
+          <input type="password" id="chg-old-password" required placeholder="••••••••" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu mới (tối thiểu 8 ký tự)</label>
+          <input type="password" id="chg-new-password" minlength="8" required placeholder="••••••••" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-md shadow-indigo-200">
+          Xác nhận đổi mật khẩu
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 15. FORGOT PASSWORD MODAL -->
+  <div id="modal-forgot-password" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Quên Mật Khẩu</h3>
+        <button onclick="closeModal('modal-forgot-password')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleForgotPasswordSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nhập email tài khoản</label>
+          <input type="email" id="forgot-email" required placeholder="email@lms.edu.vn" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-md shadow-indigo-200">
+          Gửi mã khôi phục mật khẩu
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div class="flex items-center space-x-2">
+        <span class="font-bold text-slate-700">MiniLMS</span>
+        <span>•</span>
+        <span>Phân quyền Sinh viên (SV), Giảng viên (GV), Quản trị viên (QT)</span>
+      </div>
+      <div class="flex items-center space-x-3 text-slate-500">
+        <span>Bảo mật OWASP</span>
+        <span>•</span>
+        <span>FastAPI + SQLite + Tailwind</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- App Javascript -->
+  <script src="/static/app.js"></script>
+</body>
+</html>

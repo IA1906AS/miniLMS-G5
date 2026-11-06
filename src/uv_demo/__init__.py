@@ -1,8 +1,11 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from uv_demo.database import Base, engine
@@ -15,6 +18,10 @@ from uv_demo.routers import (
     quizzes_router,
     users_router,
 )
+from uv_demo.seed import run_seed_if_needed
+
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class HealthResponse(BaseModel):
@@ -27,6 +34,8 @@ class HealthResponse(BaseModel):
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     # Tự động tạo cấu trúc bảng cơ sở dữ liệu nếu chưa tồn tại
     Base.metadata.create_all(bind=engine)
+    # Tự động nạp dữ liệu mẫu ban đầu (admin, gv, sv, khóa học, quiz)
+    run_seed_if_needed()
     yield
 
 
@@ -69,8 +78,34 @@ app.include_router(quizzes_router)
 app.include_router(forum_router)
 app.include_router(admin_router)
 
+# Mount thư mục tĩnh để phục vụ Web Client
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-@app.get("/", response_model=HealthResponse, tags=["Sức khỏe hệ thống"])
+
+@app.get("/", tags=["Giao diện & Sức khỏe"])
+def root_or_client(request: Request) -> Response:
+    accept_header = request.headers.get("accept", "")
+    index_file = STATIC_DIR / "index.html"
+    # Nếu client yêu cầu HTML (trình duyệt web), phục vụ trang giao diện Web Client
+    if "text/html" in accept_header and index_file.exists():
+        return FileResponse(index_file)
+
+    # Mặc định trả về JSON HealthResponse cho các API test / health checks
+    return JSONResponse(
+        content={
+            "status": "ok",
+            "message": "Hệ thống LMS đang hoạt động bình thường",
+            "system": "FastAPI + uv + SQLite/SQLAlchemy",
+        }
+    )
+
+
+@app.get("/app", include_in_schema=False)
+def serve_app_direct() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/api/health", response_model=HealthResponse, tags=["Sức khỏe hệ thống"])
 def health_check() -> HealthResponse:
     return HealthResponse(
         status="ok",
