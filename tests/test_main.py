@@ -43,3 +43,17 @@ def test_health_check_api_endpoint() -> None:
     response = client.get("/api/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+
+
+def test_isolated_login_page_served() -> None:
+    response = client.get("/login")
+    assert response.status_code == 200
+    assert "Đăng Nhập" in response.text
+    assert "MiniLMS" in response.text
+
+
+def test_isolated_register_page_served() -> None:
+    response = client.get("/register")
+    assert response.status_code == 200
+    assert "Đăng Ký Tài Khoản Sinh Viên" in response.text
+    assert "MiniLMS" in response.text

@@ -132,12 +132,12 @@
 
         <!-- Logged Out Container -->
         <div id="user-logged-out" class="flex items-center space-x-2">
-          <button onclick="openLoginModal()" class="px-3.5 py-1.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition">
+          <a href="/login" class="px-3.5 py-1.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition">
             Đăng nhập
-          </button>
-          <button onclick="openRegisterModal()" class="px-3.5 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm shadow-indigo-200">
+          </a>
+          <a href="/register" class="px-3.5 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm shadow-indigo-200">
             Đăng ký SV
-          </button>
+          </a>
         </div>
       </div>
     </div>
@@ -491,64 +491,7 @@
 
   <!-- ==================== MODALS ==================== -->
 
-  <!-- 1. LOGIN MODAL -->
-  <div id="modal-login" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-bold text-slate-900">Đăng Nhập MiniLMS</h3>
-        <button onclick="closeModal('modal-login')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <form onsubmit="handleLoginSubmit(event)" class="space-y-3">
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Địa chỉ Email</label>
-          <input type="email" id="login-email" required placeholder="nhapemail@lms.edu.vn" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu</label>
-          <input type="password" id="login-password" required placeholder="••••••••" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div class="flex items-center justify-between text-xs">
-          <button type="button" onclick="openForgotPasswordModal()" class="text-indigo-600 hover:underline">Quên mật khẩu?</button>
-          <button type="button" onclick="closeModal('modal-login'); openRegisterModal()" class="text-slate-500 hover:text-slate-800">Chưa có tài khoản? <span class="text-indigo-600 font-semibold">Đăng ký SV</span></button>
-        </div>
-        <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-md shadow-indigo-200">
-          Đăng nhập
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- 2. REGISTER MODAL (Sinh viên SV Only) -->
-  <div id="modal-register" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h3 class="text-lg font-bold text-slate-900">Đăng Ký Tài Khoản Sinh Viên</h3>
-          <p class="text-xs text-slate-500">Mặc định tài khoản mới sẽ có vai trò là Sinh viên (SV)</p>
-        </div>
-        <button onclick="closeModal('modal-register')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <form onsubmit="handleRegisterSubmit(event)" class="space-y-3">
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Họ và tên</label>
-          <input type="text" id="reg-fullname" required placeholder="Nguyễn Văn A" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Địa chỉ Email</label>
-          <input type="email" id="reg-email" required placeholder="sinhvien@example.com" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu (tối thiểu 8 ký tự)</label>
-          <input type="password" id="reg-password" minlength="8" required placeholder="••••••••" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-md shadow-indigo-200">
-          Xác nhận Đăng ký
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- 3. ENROLL MODAL (SV) -->
+  <!-- 1. ENROLL MODAL (SV) -->
   <div id="modal-enroll" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
       <div class="flex items-center justify-between">

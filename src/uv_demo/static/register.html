@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng Ký Tài Khoản Sinh Viên - MiniLMS</title>
+  <!-- Tailwind CSS CDN -->
+  <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome 6 with SRI hash -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gradient-to-br from-slate-100 via-sky-50/40 to-slate-100 text-slate-800 min-h-screen flex flex-col justify-between font-sans antialiased">
+
+  <!-- Header Branding -->
+  <div class="py-6 px-4 max-w-5xl mx-auto w-full flex items-center justify-between">
+    <a href="/login" class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+        <i class="fa-solid fa-graduation-cap text-lg"></i>
+      </div>
+      <div>
+        <span class="font-bold text-lg text-slate-900 tracking-tight flex items-center">
+          MiniLMS <span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">v1.0</span>
+        </span>
+        <p class="text-[11px] text-slate-500 leading-none">Cổng đăng ký sinh viên mới</p>
+      </div>
+    </a>
+    <a href="/login" class="text-xs font-semibold text-slate-600 hover:text-indigo-600 transition flex items-center">
+      <i class="fa-solid fa-arrow-left mr-1.5"></i> Về trang đăng nhập
+    </a>
+  </div>
+
+  <!-- Main Register Card Container -->
+  <main class="flex-1 flex items-center justify-center px-4 py-8">
+    <div class="max-w-md w-full space-y-4">
+
+      <!-- Anti-Privilege Escalation Notice -->
+      <div class="bg-sky-50 border border-sky-200 p-3.5 rounded-2xl flex items-start space-x-3 text-xs text-sky-900">
+        <i class="fa-solid fa-shield-halved text-sky-600 mt-0.5 text-sm"></i>
+        <div class="leading-relaxed">
+          <span class="font-bold">Chính sách bảo mật phân quyền:</span>
+          Tài khoản tự đăng ký luôn mặc định là <b class="text-sky-700">Sinh viên (SV)</b>. Quyền Giảng viên (GV) và Quản trị viên (QT) do Quản trị viên cấp phát trên hệ thống.
+        </div>
+      </div>
+
+      <!-- Main Register Card -->
+      <div class="bg-white p-7 rounded-2xl shadow-xl border border-slate-200 space-y-5">
+        <div>
+          <h1 class="text-xl font-bold text-slate-900 tracking-tight">Tạo tài khoản Sinh viên mới</h1>
+          <p class="text-xs text-slate-500 mt-1">Điền các thông tin bên dưới để bắt đầu học tập trên MiniLMS</p>
+        </div>
+
+        <!-- Inline Error Alert Box -->
+        <div id="error-alert" class="hidden p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start space-x-2">
+          <i class="fa-solid fa-circle-exclamation mt-0.5 text-red-500"></i>
+          <span id="error-message">Đã xảy ra lỗi.</span>
+        </div>
+
+        <!-- Inline Success Alert Box -->
+        <div id="success-alert" class="hidden p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-start space-x-2">
+          <i class="fa-solid fa-circle-check mt-0.5 text-emerald-600"></i>
+          <span id="success-message">Đăng ký thành công! Đang chuyển hướng...</span>
+        </div>
+
+        <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5" for="input-fullname">
+              Họ và tên sinh viên
+            </label>
+            <div class="relative">
+              <i class="fa-regular fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input type="text" id="input-fullname" required placeholder="Nguyễn Văn Sinh Viên" class="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5" for="input-email">
+              Địa chỉ Email
+            </label>
+            <div class="relative">
+              <i class="fa-regular fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input type="email" id="input-email" required placeholder="sinhvien@lms.edu.vn" class="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5" for="input-password">
+              Mật khẩu (Tối thiểu 8 ký tự)
+            </label>
+            <div class="relative">
+              <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input type="password" id="input-password" minlength="8" required placeholder="••••••••" class="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5" for="input-password-confirm">
+              Xác nhận mật khẩu
+            </label>
+            <div class="relative">
+              <i class="fa-solid fa-shield-cat absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input type="password" id="input-password-confirm" minlength="8" required placeholder="••••••••" class="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+            </div>
+          </div>
+
+          <button type="submit" id="btn-submit" class="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm transition shadow-lg shadow-sky-200 flex items-center justify-center space-x-2">
+            <span>Đăng ký tài khoản</span>
+            <i class="fa-solid fa-user-plus text-xs"></i>
+          </button>
+        </form>
+
+        <div class="pt-4 border-t border-slate-100 text-center text-xs text-slate-600">
+          Đã có tài khoản?
+          <a href="/login" class="font-bold text-sky-600 hover:text-sky-800 hover:underline">
+            Đăng nhập ngay
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="py-4 text-center text-xs text-slate-400">
+    <p>MiniLMS • Hệ thống Quản trị Học tập phân quyền Sinh viên (SV), Giảng viên (GV), Quản trị viên (QT)</p>
+  </footer>
+
+  <script>
+    function showError(msg) {
+      document.getElementById('success-alert').classList.add('hidden');
+      const alert = document.getElementById('error-alert');
+      document.getElementById('error-message').textContent = msg;
+      alert.classList.remove('hidden');
+    }
+
+    function showSuccess(msg) {
+      document.getElementById('error-alert').classList.add('hidden');
+      const alert = document.getElementById('success-alert');
+      document.getElementById('success-message').textContent = msg;
+      alert.classList.remove('hidden');
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      document.getElementById('error-alert').classList.add('hidden');
+      document.getElementById('success-alert').classList.add('hidden');
+
+      const full_name = document.getElementById('input-fullname').value.trim();
+      const email = document.getElementById('input-email').value.trim();
+      const password = document.getElementById('input-password').value;
+      const confirm = document.getElementById('input-password-confirm').value;
+
+      if (password !== confirm) {
+        showError('Xác nhận mật khẩu không khớp. Vui lòng nhập lại.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang xử lý...`;
+
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ full_name, email, password }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          showError(data.detail || 'Đăng ký không thành công.');
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+          return;
+        }
+
+        showSuccess('Đăng ký tài khoản thành công! Đang chuyển hướng đến trang đăng nhập...');
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 1500);
+      } catch (err) {
+        showError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+  </script>
+</body>
+</html>

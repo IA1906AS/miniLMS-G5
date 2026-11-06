@@ -105,6 +105,16 @@ def serve_app_direct() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/login", include_in_schema=False)
+def serve_login_page() -> FileResponse:
+    return FileResponse(STATIC_DIR / "login.html")
+
+
+@app.get("/register", include_in_schema=False)
+def serve_register_page() -> FileResponse:
+    return FileResponse(STATIC_DIR / "register.html")
+
+
 @app.get("/api/health", response_model=HealthResponse, tags=["Sức khỏe hệ thống"])
 def health_check() -> HealthResponse:
     return HealthResponse(

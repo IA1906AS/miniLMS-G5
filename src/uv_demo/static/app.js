@@ -37,10 +37,10 @@ async function api(endpoint, options = {}) {
   });
 
   if (response.status === 401) {
-    // Hết phiên hoặc token không hợp lệ
-    logout(false);
-    showToast('Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.', 'error');
-    openLoginModal();
+    // Phiên làm việc hết hạn hoặc chưa đăng nhập: chuyển hướng ngay về trang đăng nhập cô lập
+    localStorage.removeItem('lms_token');
+    localStorage.removeItem('lms_user');
+    window.location.href = '/login';
     throw new Error('Unauthorized');
   }
 
@@ -65,8 +65,19 @@ async function api(endpoint, options = {}) {
   return response;
 }
 
-// ================= TOAST NOTIFICATIONS =================
+// ================= TOAST NOTIFICATIONS (DEDUPLICATED) =================
+let lastToastMsg = '';
+let lastToastTime = 0;
+
 function showToast(message, type = 'info') {
+  const now = Date.now();
+  // Ngăn chặn hoàn toàn tình trạng spam popup lặp đi lặp lại
+  if (message === lastToastMsg && now - lastToastTime < 3000) {
+    return;
+  }
+  lastToastMsg = message;
+  lastToastTime = now;
+
   const container = document.getElementById('toast-container');
   if (!container) return;
 
@@ -104,12 +115,18 @@ function showToast(message, type = 'info') {
 // ================= AUTHENTICATION & QUICK DEMO =================
 async function quickLogin(email, password) {
   try {
-    const res = await api('/api/auth/login', {
+    const res = await fetch('/api/auth/login', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    setSession(res);
-    showToast(`Đăng nhập thành công với vai trò ${getRoleLabel(res.role)}!`, 'success');
+    if (!res.ok) {
+      showToast('Đăng nhập nhanh không thành công.', 'error');
+      return;
+    }
+    const data = await res.json();
+    setSession(data);
+    showToast(`Đã chuyển sang vai trò ${getRoleLabel(data.role)}!`, 'success');
     closeAllModals();
     await initApp();
   } catch (e) {
@@ -130,16 +147,16 @@ function setSession(authData) {
 
 function logout(notify = true) {
   if (state.token) {
-    // Thu hồi token trên máy chủ (chống lạm dụng token)
-    api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${state.token}` },
+    }).catch(() => {});
   }
   state.token = null;
   state.currentUser = null;
   localStorage.removeItem('lms_token');
   localStorage.removeItem('lms_user');
-  if (notify) showToast('Đã đăng xuất khỏi hệ thống.', 'info');
-  updateNavState();
-  navigateTo('courses');
+  window.location.href = '/login';
 }
 
 function getRoleLabel(role) {
@@ -1646,23 +1663,22 @@ document.addEventListener('click', (e) => {
 
 // ================= INITIALIZATION =================
 async function initApp() {
-  updateNavState();
-  if (state.token) {
-    try {
-      const me = await api('/api/users/me');
-      state.currentUser = me;
-      localStorage.setItem('lms_user', JSON.stringify(me));
-      updateNavState();
-    } catch {
-      logout(false);
-    }
-  } else {
-    // If not logged in on first visit, automatically quick-login as student for instant delight
-    quickLogin('student1@lms.edu.vn', 'student123');
+  if (!state.token) {
+    window.location.href = '/login';
     return;
   }
-
-  loadCourses();
+  updateNavState();
+  try {
+    const me = await api('/api/users/me');
+    state.currentUser = me;
+    localStorage.setItem('lms_user', JSON.stringify(me));
+    updateNavState();
+    loadCourses();
+  } catch (err) {
+    localStorage.removeItem('lms_token');
+    localStorage.removeItem('lms_user');
+    window.location.href = '/login';
+  }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
