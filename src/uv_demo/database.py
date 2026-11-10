@@ -4,9 +4,11 @@ from collections.abc import Generator
 import psycopg
 from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
+from sqlalchemy.exc import OperationalError as SQLAlchemyOperationalError
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from uv_demo.config import settings
+from uv_demo.services.backoff import exponential_backoff
 
 _is_sqlite = "sqlite" in settings.DATABASE_URL
 
@@ -23,8 +25,14 @@ class Base(DeclarativeBase):
     pass
 
 
+@exponential_backoff(
+    max_retries=3,
+    base_delay=0.5,
+    max_delay=5.0,
+    retryable_exceptions=(psycopg.OperationalError, SQLAlchemyOperationalError),
+)
 def ensure_database_ready() -> None:
-    """Tự động khởi tạo database trên PostgreSQL nếu chưa tồn tại."""
+    """Tự động khởi tạo database trên PostgreSQL với cơ chế Exponential Backoff."""
     if _is_sqlite:
         return
     url = make_url(settings.DATABASE_URL)

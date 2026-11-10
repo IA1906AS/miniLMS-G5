@@ -3,12 +3,14 @@ from collections import defaultdict
 
 from fastapi import HTTPException, Request, status
 
+from uv_demo.services.backoff import compute_backoff_delay
+
 
 class InMemoryRateLimiter:
-    """Bộ giới hạn tốc độ (Rate Limiter) dạng sliding-window.
+    """Bộ giới hạn tốc độ kết hợp Exponential Backoff chống Brute-Force.
 
-    Bảo vệ các endpoint nhạy cảm như Đăng nhập (/api/auth/login) khỏi các cuộc tấn
-    công dò mật khẩu (Brute-Force), Credential Stuffing và DDoS.
+    Khi số lần thử vượt ngưỡng cho phép, thời gian chờ (Retry-After) sẽ tăng
+    theo cấp số nhân (Exponential Backoff) tương ứng với số lần vi phạm liên tiếp.
     """
 
     def __init__(self, max_requests: int = 15, window_seconds: int = 60) -> None:
@@ -21,19 +23,33 @@ class InMemoryRateLimiter:
         now = time.time()
         window_start = now - self.window_seconds
 
-        # Loại bỏ các mốc thời gian ngoài cửa sổ trượt
         self._requests[client_ip] = [
             t for t in self._requests[client_ip] if t > window_start
         ]
 
-        if len(self._requests[client_ip]) >= self.max_requests:
+        attempts = len(self._requests[client_ip])
+        if attempts >= self.max_requests:
+            excess = attempts - self.max_requests
+            retry_after = int(
+                compute_backoff_delay(
+                    attempt=excess,
+                    base_delay=2.0,
+                    max_delay=float(self.window_seconds),
+                    backoff_factor=2.0,
+                    jitter=False,
+                )
+            )
+            self._requests[client_ip].append(now)
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Bạn đã thực hiện quá nhiều yêu cầu xác thực trong thời gian ngắn. Vui lòng đợi 1 phút.",
+                detail=(
+                    f"Bạn đã thực hiện quá nhiều yêu cầu xác thực. "
+                    f"Vui lòng đợi {retry_after} giây (Exponential Backoff)."
+                ),
+                headers={"Retry-After": str(retry_after)},
             )
 
         self._requests[client_ip].append(now)
 
 
-# Áp dụng cho API đăng nhập: tối đa 15 lần trong 60 giây cho mỗi IP
 login_rate_limiter = InMemoryRateLimiter(max_requests=15, window_seconds=60)

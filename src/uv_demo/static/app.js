@@ -19,14 +19,28 @@ const state = {
   adminDebounceTimer: null,
 };
 
-// ================= API HELPER =================
+// ================= API HELPER (WITH EXPONENTIAL BACKOFF) =================
+async function fetchWithBackoff(url, options, maxRetries = 3, baseDelayMs = 300) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      if (![502, 503, 504].includes(res.status) || attempt === maxRetries) return res;
+    } catch (err) {
+      if (attempt === maxRetries) throw err;
+    }
+    const expDelay = Math.min(5000, baseDelayMs * Math.pow(2, attempt));
+    const jitter = Math.random() * expDelay * 0.25;
+    await new Promise(r => setTimeout(r, expDelay + jitter));
+  }
+}
+
 async function api(endpoint, options = {}) {
   const headers = options.headers || {};
   if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
   if (!(options.body instanceof FormData) && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
-  const response = await fetch(endpoint, { ...options, headers });
+  const response = await fetchWithBackoff(endpoint, { ...options, headers });
 
   if (response.status === 401) {
     localStorage.removeItem('lms_token');

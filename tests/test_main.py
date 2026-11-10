@@ -121,3 +121,51 @@ def test_postgresql_database_url_resolution(monkeypatch: object) -> None:
             os.environ["DATABASE_URL"] = old_url
         else:
             os.environ.pop("DATABASE_URL", None)
+
+
+def test_exponential_backoff_pattern() -> None:
+    import pytest
+
+    from uv_demo.services.backoff import (
+        compute_backoff_delay,
+        exponential_backoff,
+        run_with_backoff,
+    )
+
+    assert compute_backoff_delay(0, base_delay=0.5, jitter=False) == 0.5
+    assert compute_backoff_delay(1, base_delay=0.5, jitter=False) == 1.0
+    assert compute_backoff_delay(2, base_delay=0.5, jitter=False) == 2.0
+    assert compute_backoff_delay(5, base_delay=0.5, max_delay=3.0, jitter=False) == 3.0
+    jittered = compute_backoff_delay(1, base_delay=1.0, max_delay=10.0, jitter=True)
+    assert 2.0 <= jittered <= 2.5
+
+    attempts = 0
+    slept: list[float] = []
+
+    def flaky_operation() -> str:
+        nonlocal attempts
+        attempts += 1
+        if attempts < 3:
+            raise ConnectionError("Transient DB failure")
+        return "recovered"
+
+    result = run_with_backoff(
+        flaky_operation,
+        max_retries=3,
+        base_delay=0.1,
+        jitter=False,
+        retryable_exceptions=(ConnectionError,),
+        sleep_fn=slept.append,
+    )
+    assert result == "recovered"
+    assert attempts == 3
+    assert slept == [0.1, 0.2]
+
+    @exponential_backoff(
+        max_retries=2, base_delay=0.01, retryable_exceptions=(ValueError,)
+    )
+    def always_fails() -> None:
+        raise ValueError("Permanent failure")
+
+    with pytest.raises(ValueError, match="Permanent failure"):
+        always_fails()
