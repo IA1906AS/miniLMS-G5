@@ -4,6 +4,7 @@ from fastapi import (
     APIRouter,
     Depends,
     File,
+    Header,
     HTTPException,
     UploadFile,
     status,
@@ -11,7 +12,6 @@ from fastapi import (
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from uv_demo.config import settings
 from uv_demo.database import get_db
 from uv_demo.models.assignment import Assignment, Submission
 from uv_demo.models.course import Course, Enrollment
@@ -28,6 +28,7 @@ from uv_demo.security.dependencies import (
     get_current_user,
     require_roles,
 )
+from uv_demo.services.idempotency import submit_assignment_idempotent
 from uv_demo.services.storage import storage_service
 
 router = APIRouter(tags=["4. Bài tập và Đánh giá"])
@@ -142,10 +143,11 @@ def list_assignments(
 async def submit_assignment(
     assignment_id: int,
     file: UploadFile = File(...),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     current_user: User = Depends(require_roles(UserRole.SV)),
     db: Session = Depends(get_db),
 ) -> SubmissionResponse:
-    """Sinh viên nộp bài làm trong thời hạn quy định."""
+    """Sinh viên nộp bài làm trong thời hạn quy định (hỗ trợ Idempotency-Key)."""
     assignment = _get_assignment_or_404(db, assignment_id)
     enrollment = (
         db.query(Enrollment)
@@ -161,58 +163,13 @@ async def submit_assignment(
             detail="Bạn chưa ghi danh vào khóa học chứa bài tập này.",
         )
 
-    now = datetime.now(UTC)
-    assignment_deadline = (
-        assignment.deadline
-        if assignment.deadline.tzinfo
-        else assignment.deadline.replace(tzinfo=UTC)
-    )
-    if now > assignment_deadline:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Đã hết hạn nộp bài cho bài tập này.",
-        )
-
-    original_filename, relative_path = await storage_service.save_upload_file(
+    return await submit_assignment_idempotent(
+        db=db,
+        assignment=assignment,
+        current_user=current_user,
         file=file,
-        subfolder="submissions",
-        allowed_extensions=settings.ALLOWED_SUBMISSION_EXTENSIONS,
+        raw_idempotency_key=idempotency_key,
     )
-
-    existing_sub = (
-        db.query(Submission)
-        .filter(
-            Submission.assignment_id == assignment_id,
-            Submission.student_id == current_user.id,
-        )
-        .first()
-    )
-    if existing_sub:
-        existing_sub.filename = original_filename
-        existing_sub.file_path = relative_path
-        existing_sub.submitted_at = now
-        sub = existing_sub
-    else:
-        sub = Submission(
-            assignment_id=assignment_id,
-            student_id=current_user.id,
-            filename=original_filename,
-            file_path=relative_path,
-            submitted_at=now,
-        )
-        db.add(sub)
-
-    db.commit()
-    db.refresh(sub)
-    log_audit(
-        db,
-        action="SUBMIT_ASSIGNMENT",
-        entity_type="SUBMISSION",
-        user_id=current_user.id,
-        entity_id=sub.id,
-        details=f"Sinh viên nộp bài làm '{sub.filename}' cho bài tập #{assignment_id}",
-    )
-    return _to_submission_response(sub)
 
 
 @router.get(

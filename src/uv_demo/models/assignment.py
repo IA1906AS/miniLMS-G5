@@ -78,3 +78,35 @@ class Submission(Base):
     )
     student: Mapped["User"] = relationship("User", foreign_keys=[student_id])
     grader: Mapped[Optional["User"]] = relationship("User", foreign_keys=[graded_by_id])
+
+
+class IdempotencyRecord(Base):
+    __tablename__ = "idempotency_keys"
+    __table_args__ = (
+        UniqueConstraint("user_id", "idempotency_key", name="uq_user_idempotency_key"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    idempotency_key: Mapped[str] = mapped_column(
+        String(128), nullable=False, index=True
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    assignment_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("assignments.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20), default="PROCESSING", nullable=False
+    )
+    response_body: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )

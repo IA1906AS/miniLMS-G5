@@ -97,12 +97,15 @@ async function handleStudentSubmitAssignment(e) {
     return;
   }
 
+  const selectedFile = fileInput.files[0];
+  const idempotencyKey = `sub-${state.activeAssignment.id}-${selectedFile.name}-${selectedFile.size}-${selectedFile.lastModified}`;
   const formData = new FormData();
-  formData.append('file', fileInput.files[0]);
+  formData.append('file', selectedFile);
 
   try {
     await api(`/api/assignments/${state.activeAssignment.id}/submit`, {
       method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
       body: formData,
     });
     showToast('Nộp bài tập thành công!', 'success');

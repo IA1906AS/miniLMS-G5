@@ -1,11 +1,13 @@
 import io
+from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from tests.conftest import create_test_user, get_auth_headers
+from uv_demo.models.assignment import Assignment, IdempotencyRecord, Submission
 from uv_demo.models.course import Course, Enrollment
-from uv_demo.models.user import UserRole
+from uv_demo.models.user import AuditLog, UserRole
 
 
 def test_admin_lock_and_unlock_user(client: TestClient, db_session: Session) -> None:
@@ -149,3 +151,160 @@ def test_avatar_upload_and_download(client: TestClient, db_session: Session) -> 
     # Tải về avatar
     res_get = client.get(f"/api/users/avatar/{user.id}")
     assert res_get.status_code == 200
+
+
+def test_assignment_submission_idempotency_key_pattern(
+    client: TestClient, db_session: Session
+) -> None:
+    gv = create_test_user(db_session, "gv_idem@lms.edu", role=UserRole.GV)
+    sv1 = create_test_user(db_session, "sv1_idem@lms.edu", role=UserRole.SV)
+    sv2 = create_test_user(db_session, "sv2_idem@lms.edu", role=UserRole.SV)
+
+    course = Course(code="IDEM101", title="Idempotency Course", instructor_id=gv.id)
+    db_session.add(course)
+    db_session.flush()
+    db_session.add_all(
+        [
+            Enrollment(course_id=course.id, student_id=sv1.id),
+            Enrollment(course_id=course.id, student_id=sv2.id),
+        ]
+    )
+    assignment = Assignment(
+        course_id=course.id,
+        title="Idempotent Assignment",
+        description="Test Idempotency Key Pattern",
+        deadline=datetime.now(UTC) + timedelta(days=7),
+        max_score=10.0,
+    )
+    db_session.add(assignment)
+    db_session.commit()
+
+    headers_sv1 = {**get_auth_headers(sv1), "Idempotency-Key": "idem-submit-key-001"}
+    payload_bytes = b"print('hello idempotent world')"
+
+    # 1. Lần gửi đầu tiên: tạo bài nộp mới
+    res1 = client.post(
+        f"/api/assignments/{assignment.id}/submit",
+        headers=headers_sv1,
+        files={"file": ("solution.py", io.BytesIO(payload_bytes), "text/x-python")},
+    )
+    assert res1.status_code == 201
+    data1 = res1.json()
+
+    sub_record = (
+        db_session.query(Submission)
+        .filter(
+            Submission.assignment_id == assignment.id,
+            Submission.student_id == sv1.id,
+        )
+        .one()
+    )
+    first_file_path = sub_record.file_path
+
+    # 2. Gửi lặp lần 2 với cùng Idempotency-Key và cùng nội dung file -> trả về kết quả cũ, không ghi đè file/audit log
+    res2 = client.post(
+        f"/api/assignments/{assignment.id}/submit",
+        headers=headers_sv1,
+        files={"file": ("solution.py", io.BytesIO(payload_bytes), "text/x-python")},
+    )
+    assert res2.status_code == 201
+    data2 = res2.json()
+    assert data2["id"] == data1["id"]
+    assert data2["submitted_at"] == data1["submitted_at"]
+
+    db_session.refresh(sub_record)
+    assert sub_record.file_path == first_file_path
+    audit_count = (
+        db_session.query(AuditLog)
+        .filter(
+            AuditLog.user_id == sv1.id,
+            AuditLog.action == "SUBMIT_ASSIGNMENT",
+        )
+        .count()
+    )
+    assert audit_count == 1
+
+    # 3. Dùng lại cùng Idempotency-Key nhưng thay đổi nội dung file -> 422 Unprocessable Entity
+    res_mismatch = client.post(
+        f"/api/assignments/{assignment.id}/submit",
+        headers=headers_sv1,
+        files={
+            "file": (
+                "solution.py",
+                io.BytesIO(b"print('different payload')"),
+                "text/x-python",
+            )
+        },
+    )
+    assert res_mismatch.status_code == 422
+
+    # 4. Sinh viên khác (sv2) dùng cùng chuỗi Idempotency-Key vẫn hoạt động độc lập
+    headers_sv2 = {**get_auth_headers(sv2), "Idempotency-Key": "idem-submit-key-001"}
+    res_sv2 = client.post(
+        f"/api/assignments/{assignment.id}/submit",
+        headers=headers_sv2,
+        files={"file": ("sv2_work.py", io.BytesIO(b"print('sv2')"), "text/x-python")},
+    )
+    assert res_sv2.status_code == 201
+
+
+def test_idempotency_key_edge_cases(client: TestClient, db_session: Session) -> None:
+    gv = create_test_user(db_session, "gv_idem_edge@lms.edu", role=UserRole.GV)
+    sv = create_test_user(db_session, "sv_idem_edge@lms.edu", role=UserRole.SV)
+    course = Course(code="IDEM102", title="Edge Course", instructor_id=gv.id)
+    db_session.add(course)
+    db_session.flush()
+    db_session.add(Enrollment(course_id=course.id, student_id=sv.id))
+    assignment = Assignment(
+        course_id=course.id,
+        title="Edge Assignment",
+        deadline=datetime.now(UTC) + timedelta(days=3),
+        max_score=10.0,
+    )
+    db_session.add(assignment)
+    db_session.commit()
+
+    base_headers = get_auth_headers(sv)
+
+    # Key rỗng hoặc quá dài -> 400 Bad Request
+    for bad_key in ("   ", "k" * 129):
+        res_bad = client.post(
+            f"/api/assignments/{assignment.id}/submit",
+            headers={**base_headers, "Idempotency-Key": bad_key},
+            files={"file": ("test.txt", io.BytesIO(b"hello"), "text/plain")},
+        )
+        assert res_bad.status_code == 400
+
+    # Key đang ở trạng thái PROCESSING (request đồng thời) -> 409 Conflict
+    from uv_demo.services.idempotency import compute_submission_fingerprint
+
+    content = b"in-flight content"
+    fp = compute_submission_fingerprint(assignment.id, "test.txt", content)
+    in_flight = IdempotencyRecord(
+        idempotency_key="in-flight-key",
+        user_id=sv.id,
+        assignment_id=assignment.id,
+        request_hash=fp,
+        status="PROCESSING",
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+    )
+    db_session.add(in_flight)
+    db_session.commit()
+
+    res_conflict = client.post(
+        f"/api/assignments/{assignment.id}/submit",
+        headers={**base_headers, "Idempotency-Key": "in-flight-key"},
+        files={"file": ("test.txt", io.BytesIO(content), "text/plain")},
+    )
+    assert res_conflict.status_code == 409
+
+    # Key đã hết hạn (expires_at <= now) -> được làm mới và nộp thành công
+    in_flight.expires_at = datetime.now(UTC) - timedelta(minutes=5)
+    db_session.commit()
+
+    res_expired = client.post(
+        f"/api/assignments/{assignment.id}/submit",
+        headers={**base_headers, "Idempotency-Key": "in-flight-key"},
+        files={"file": ("test.txt", io.BytesIO(content), "text/plain")},
+    )
+    assert res_expired.status_code == 201

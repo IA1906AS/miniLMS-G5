@@ -1,4 +1,4 @@
-from uv_demo.models.assignment import Assignment, Submission
+from uv_demo.models.assignment import Assignment, IdempotencyRecord, Submission
 from uv_demo.models.course import Course, Enrollment, Material
 from uv_demo.models.forum import Announcement, ForumComment, ForumTopic
 from uv_demo.models.quiz import Quiz, QuizAnswer, QuizAttempt, QuizOption, QuizQuestion
@@ -21,6 +21,7 @@ __all__ = [
     "Material",
     "Assignment",
     "Submission",
+    "IdempotencyRecord",
     "Quiz",
     "QuizQuestion",
     "QuizOption",
