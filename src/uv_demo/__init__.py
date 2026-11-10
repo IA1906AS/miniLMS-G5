@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from uv_demo.database import Base, engine
+from uv_demo.database import Base, engine, ensure_database_ready
 from uv_demo.routers import (
     admin_router,
     assignments_router,
@@ -33,9 +33,8 @@ class HealthResponse(BaseModel):
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
-    # Tự động tạo cấu trúc bảng cơ sở dữ liệu nếu chưa tồn tại
+    ensure_database_ready()
     Base.metadata.create_all(bind=engine)
-    # Tự động nạp dữ liệu mẫu ban đầu (admin, gv, sv, khóa học, quiz)
     run_seed_if_needed()
     yield
 

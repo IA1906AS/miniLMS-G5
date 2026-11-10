@@ -94,3 +94,30 @@ def test_no_god_files_exceed_350_lines() -> None:
                     f"God file detected: {file_path.relative_to(project_root)} "
                     f"has {line_count} lines (maximum allowed is 350)."
                 )
+
+
+def test_postgresql_database_url_resolution(monkeypatch: object) -> None:
+    import os
+
+    from uv_demo.config import _resolve_database_url
+
+    old_url = os.environ.pop("DATABASE_URL", None)
+    try:
+        os.environ["POSTGRES_USER"] = "postgres"
+        os.environ["POSTGRES_PASSWORD"] = "secret"
+        os.environ["POSTGRES_HOST"] = "127.0.0.1"
+        os.environ["POSTGRES_PORT"] = "5432"
+        os.environ["POSTGRES_DB"] = "minilms"
+        resolved = _resolve_database_url()
+        assert resolved == "postgresql+psycopg://postgres:secret@127.0.0.1:5432/minilms"
+
+        os.environ["DATABASE_URL"] = "postgresql://postgres:secret@localhost:5432/lms"
+        assert (
+            _resolve_database_url()
+            == "postgresql+psycopg://postgres:secret@localhost:5432/lms"
+        )
+    finally:
+        if old_url is not None:
+            os.environ["DATABASE_URL"] = old_url
+        else:
+            os.environ.pop("DATABASE_URL", None)

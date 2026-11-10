@@ -1,3 +1,4 @@
+import os
 from collections.abc import Generator
 
 import pytest
@@ -6,11 +7,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from uv_demo import app
-from uv_demo.database import Base, get_db
-from uv_demo.models.user import User, UserRole
-from uv_demo.security.password import hash_password
-from uv_demo.security.token import create_access_token
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+
+from uv_demo import app  # noqa: E402
+from uv_demo.database import Base, get_db  # noqa: E402
+from uv_demo.models.user import User, UserRole  # noqa: E402
+from uv_demo.security.password import hash_password  # noqa: E402
+from uv_demo.security.token import create_access_token  # noqa: E402
 
 # Test database in-memory
 TEST_DB_URL = "sqlite:///:memory:"
