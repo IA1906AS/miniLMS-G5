@@ -2,6 +2,7 @@ import re
 from collections.abc import Generator
 
 import psycopg
+from psycopg import sql
 from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import OperationalError as SQLAlchemyOperationalError
@@ -50,7 +51,8 @@ def ensure_database_ready() -> None:
         with conn.cursor() as cur:
             cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (target_db,))
             if cur.fetchone() is None:
-                cur.execute(f'CREATE DATABASE "{target_db}"')
+                stmt = sql.SQL("CREATE DATABASE {}").format(sql.Identifier(target_db))
+                cur.execute(stmt)  # nosemgrep
 
 
 def get_db() -> Generator[Session, None, None]:
